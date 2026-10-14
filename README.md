@@ -32,16 +32,17 @@ studies/wax-seal-study/   the original studies, unchanged (unzipped from wax-sea
 Everything in `docs/` is plain HTML, CSS and JavaScript with relative paths. There is no build step; `docs/` is also the editable source.
 
 **How the studies were adapted.** Each scene is its study with only these changes:
-- light theme only
+- light theme only, with one shared background grey (`#e9e9e9`) so the page never changes tint between steps
 - its own reset button hidden, in favor of the single restart
 - Pour the Wax's text label and web font removed
+- in Pour the Wax only: its envelope drawing replaced with the closed envelope from Fold the Flap (the same art Lift the Stamp uses), with the flap tip on the wax target, so the envelope you close is the one you pour onto
 - a `SceneBridge.complete()` call at the study's success moment
 - a small `SceneBridge.register({...})` block at the end of the script
 - in Align the Stamp only: arrow-key turning, so the whole sequence works by keyboard. It uses the drag's own resistance, ticks and snap.
 
 All gestures, physics, thresholds, sounds and haptics are the studies' own. Compare any scene with its original in `studies/` to see the exact difference.
 
-**Hand-offs.** After a step succeeds, its feedback gets a moment to land (`HOLD` in `js/sequence.js`). The next scene then fades in while both slide, so the seal area glides from its old position to its new one.
+**Hand-offs.** After a step succeeds, its feedback gets a moment to land (`HOLD` in `js/sequence.js`). The next scene then fades in while both slide, so the seal area glides from its old position to its new one. When both scenes show the envelope, they also scale so the envelope keeps its size through the hand-off.
 
 ## Run locally
 

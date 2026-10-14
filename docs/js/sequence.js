@@ -90,6 +90,7 @@
   function show(i) {
     frames.forEach((f, k) => {
       f.getAnimations().forEach(a => a.cancel());
+      f.style.transformOrigin = '';
       f.classList.remove('is-leaving', 'is-entering');
       f.classList.toggle('is-current', k === i);
       setInert(f, k !== i);
@@ -125,25 +126,33 @@
     setInert(A, true);
     setInert(B, true);
 
-    let dx = 0, dy = 0;
+    // When both scenes show the envelope (they report its width), also scale them
+    // so the envelope keeps its size through the hand-off.
+    let dx = 0, dy = 0, s = 1, a = null, b = null;
     if (!reduce) {
-      const [a, b] = await Promise.all([anchor(from), anchor(to)]);
-      if (a && b) { dx = a.x - b.x; dy = a.y - b.y; }
+      [a, b] = await Promise.all([anchor(from), anchor(to)]);
+      if (a && b) {
+        dx = a.x - b.x; dy = a.y - b.y;
+        if (a.w > 0 && b.w > 0) s = a.w / b.w;
+      }
     }
     if (token !== run) { transitioning = false; return false; }
 
     A.classList.remove('is-current');
     A.classList.add('is-leaving');
     B.classList.add('is-entering');
+    // scale about each scene's own anchor, so the anchor is what travels
+    A.style.transformOrigin = a && b ? `${a.x}px ${a.y}px` : '';
+    B.style.transformOrigin = a && b ? `${b.x}px ${b.y}px` : '';
 
     const anims = [
       B.animate([
-        { opacity: 0, transform: `translate(${dx}px, ${dy}px)` },
-        { opacity: 1, transform: 'translate(0, 0)' }
+        { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(${s})` },
+        { opacity: 1, transform: 'translate(0, 0) scale(1)' }
       ], { duration: FADE, easing: EASE, fill: 'forwards' }),
       A.animate([
-        { transform: 'translate(0, 0)' },
-        { transform: `translate(${-dx}px, ${-dy}px)` }
+        { transform: 'translate(0, 0) scale(1)' },
+        { transform: `translate(${-dx}px, ${-dy}px) scale(${1 / s})` }
       ], { duration: FADE, easing: EASE, fill: 'forwards' })
     ];
     await Promise.all(anims.map(a => a.finished.catch(() => {})));

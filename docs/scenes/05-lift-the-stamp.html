@@ -513,7 +513,8 @@
   SceneBridge.register({
     reset: () => $('reset').click(),
     focusTarget: () => hit,
-    anchor: () => { const m = svg.getScreenCTM(); return { x: m.a * 200 + m.c * 470 + m.e, y: m.b * 200 + m.d * 470 + m.f }; }
+    // w: the envelope's on-screen width (400 × 1.2 scene units)
+    anchor: () => { const m = svg.getScreenCTM(); return { x: m.a * 200 + m.c * 470 + m.e, y: m.b * 200 + m.d * 470 + m.f, w: 480 * m.a }; }
   });
 })();
 </script>

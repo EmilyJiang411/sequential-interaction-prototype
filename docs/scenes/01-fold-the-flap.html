@@ -414,7 +414,8 @@
     reset: () => reset.click(),
     focusTarget: () => hit,
     // tip of the closed flap, where the wax will land
-    anchor: () => { const r = stage.getBoundingClientRect(); return { x: r.left + 206.3 * scale, y: r.top + 308.1 * scale }; }
+    // w: the envelope's on-screen width, so the hand-off can keep the envelope the same size
+    anchor: () => { const r = stage.getBoundingClientRect(); return { x: r.left + 206.3 * scale, y: r.top + 308.1 * scale, w: 400 * scale }; }
   });
 })();
 </script>
