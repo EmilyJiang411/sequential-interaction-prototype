@@ -37,6 +37,7 @@ Everything in `docs/` is plain HTML, CSS and JavaScript with relative paths. The
 - Pour the Wax's text label and web font removed
 - a `SceneBridge.complete()` call at the study's success moment
 - a small `SceneBridge.register({...})` block at the end of the script
+- in Align the Stamp only: arrow-key turning, so the whole sequence works by keyboard. It uses the drag's own resistance, ticks and snap.
 
 All gestures, physics, thresholds, sounds and haptics are the studies' own. Compare any scene with its original in `studies/` to see the exact difference.
 
