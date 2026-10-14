@@ -1,0 +1,78 @@
+/* Sequence shell: five full-viewport scenes stacked; one restart control. Light only. */
+:root {
+  --bg: #e9e9e9;
+  --ink: #3a3a3a;
+  --btn: rgba(255, 255, 255, .55);
+  --btn-hover: rgba(255, 255, 255, .85);
+  --btn-line: rgba(0, 0, 0, .12);
+  color-scheme: light;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.sequence {
+  position: fixed;
+  inset: 0;
+}
+
+/* Every scene fills the viewport. Hidden scenes are invisible, inert and untouchable. */
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.scene.is-current {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 2;
+}
+/* During a hand-off the outgoing scene sits underneath, the incoming one fades in on top. */
+.scene.is-leaving {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
+}
+.scene.is-entering {
+  visibility: visible;
+  z-index: 2;
+}
+
+.restart {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--btn-line);
+  background: var(--btn);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background .2s ease, transform .2s ease;
+}
+.restart:hover { background: var(--btn-hover); }
+.restart:active { transform: scale(.94); }
+.restart:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.restart svg { width: 20px; height: 20px; }

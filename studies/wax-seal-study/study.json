@@ -1,0 +1,60 @@
+{
+  "name": "wax-seal-study",
+  "title": "Wax Seal Study",
+  "description": "Five-step tactile interaction study: fold an envelope flap, pour wax, align, press and lift a seal stamp.",
+  "dependencies": {
+    "build": "none",
+    "runtime": ["Pointer Events", "Web Audio API", "SVG filters", "CSS 3D transforms"],
+    "external": [
+      { "step": "02-pour-the-wax", "url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap", "optional": true }
+    ],
+    "assets": []
+  },
+  "steps": [
+    {
+      "id": "01-fold-the-flap",
+      "title": "Fold the Flap",
+      "entry": "steps/01-fold-the-flap/index.html",
+      "gesture": "drag flap corner downward",
+      "states": ["open", "drag", "anim", "closed"],
+      "completion": { "line": 333, "code": "state = 'closed'", "suggestedEvent": "flap:closed" },
+      "source": "https://claude.ai/artifact/VR8CE8qYnrmPfq7p3dgxzL"
+    },
+    {
+      "id": "02-pour-the-wax",
+      "title": "Pour the Wax",
+      "entry": "steps/02-pour-the-wax/index.html",
+      "gesture": "rotate spoon handle to tilt and pour",
+      "states": ["idle", "hover", "dragging", "pouring", "emptied", "done"],
+      "completion": { "line": 549, "code": "S.done = true", "suggestedEvent": "wax:poured" },
+      "source": "https://claude.ai/artifact/DruPhHuoF6pu3bMeA91kqn"
+    },
+    {
+      "id": "03-align-the-stamp",
+      "title": "Align the Stamp",
+      "entry": "steps/03-align-the-stamp/index.html",
+      "gesture": "rotate ring/knob until marker meets notch",
+      "states": ["tilted", "dragging", "locked"],
+      "completion": { "line": 343, "code": "locked = true", "suggestedEvent": "stamp:aligned" },
+      "source": "https://claude.ai/artifact/DqRoAMoFzsJ8kLNyX8TVgo"
+    },
+    {
+      "id": "04-press-the-stamp",
+      "title": "Press the Stamp",
+      "entry": "steps/04-press-the-stamp/index.html",
+      "gesture": "press and hold handle",
+      "states": ["idle", "hover", "holding", "returning", "done"],
+      "completion": { "line": 302, "code": "done = true", "suggestedEvent": "stamp:pressed" },
+      "source": "https://claude.ai/artifact/Kb9WQoCTuLD8c6R1DnZ1X1"
+    },
+    {
+      "id": "05-lift-the-stamp",
+      "title": "Lift the Stamp",
+      "entry": "steps/05-lift-the-stamp/index.html",
+      "gesture": "drag handle upward to break the tack",
+      "states": ["resting", "gripping", "released", "hovering"],
+      "completion": { "line": 367, "code": "released = true", "suggestedEvent": "seal:revealed" },
+      "source": "https://claude.ai/artifact/DBwtLibVSorxdLzKikYsjb"
+    }
+  ]
+}

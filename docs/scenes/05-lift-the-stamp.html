@@ -1,0 +1,521 @@
+<!doctype html><html lang="en" data-scene="lift"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lift the Stamp</title>
+<style>
+  /* Layout: one full-viewport SVG stage, scene centred, a single round reset control in the corner. */
+  :root {
+    --page: #e9e9e9;
+    --paper: #efefef;
+    --paper-flap: #f6f6f6;
+    --ink: #3a3a3a;
+    --control: rgba(255,255,255,.55);
+    --control-hover: rgba(255,255,255,.85);
+    color-scheme: light;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .stage {
+    box-sizing: border-box;
+    height: 100%;
+    padding-inline: 16px;
+    display: grid;
+    place-items: center;
+  }
+  svg#scene {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    display: block;
+    touch-action: none;
+    overflow: hidden;
+  }
+  #hit { cursor: grab; pointer-events: all; outline: none; }
+  .gripping #hit { cursor: grabbing; }
+  .released #hit { cursor: grab; }
+
+  #halo, #glow { transition: opacity .25s ease; }
+  #halo { opacity: 0; }
+  #glow { opacity: 0; }
+  .hot #halo { opacity: .5; }
+  .hot #glow { opacity: .2; }
+
+  #hint { opacity: 0; animation: rise 2.6s cubic-bezier(.3,.6,.4,1) .8s infinite; }
+  .hint-off #hint { animation: none; opacity: 0; }
+  @keyframes rise {
+    0%   { transform: translateY(4px);   opacity: 0; }
+    22%  { opacity: .7; }
+    100% { transform: translateY(-40px); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #hint { animation: none; opacity: .45; transform: translateY(-14px); }
+    .hint-off #hint { opacity: 0; }
+  }
+
+  .reset {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,.12);
+    background: var(--control);
+    color: var(--ink);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background .2s ease, transform .2s ease;
+    backdrop-filter: blur(6px);
+  }
+  .reset:hover { background: var(--control-hover); }
+  .reset:active { transform: scale(.94); }
+  .reset:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .reset svg { width: 20px; height: 20px; }
+</style>
+
+<main class="stage">
+<svg id="scene" class="hint-on" viewBox="-62 22 510 524" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A wax seal stamp resting in cooled wax on an envelope">
+  <defs>
+    <!-- wax -->
+    <filter id="rough" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="24" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="roughShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="24" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="6"/>
+    </filter>
+    <filter id="blur2"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="blur8" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>
+    <filter id="haloBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    <filter id="paperShadow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
+    <filter id="castBlur" x="-80%" y="-200%" width="260%" height="500%"><feGaussianBlur id="castBlurStd" stdDeviation="3"/></filter>
+    <!-- matte grain for cooled wax -->
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.1 0.75" result="dots"/>
+      <feComposite in="dots" in2="SourceGraphic" operator="in" result="g"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="g"/></feMerge>
+    </filter>
+
+    <radialGradient id="wax" cx="38%" cy="32%" r="72%">
+      <stop offset="0" stop-color="#a4a4a4"/>
+      <stop offset="0.55" stop-color="#727272"/>
+      <stop offset="1" stop-color="#454545"/>
+    </radialGradient>
+    <radialGradient id="well" cx="58%" cy="62%" r="70%">
+      <stop offset="0" stop-color="#7c7c7c"/>
+      <stop offset="1" stop-color="#5a5a5a"/>
+    </radialGradient>
+    <radialGradient id="matte" cx="44%" cy="40%" r="62%">
+      <stop offset="0" stop-color="#7d7d7d"/>
+      <stop offset="1" stop-color="#666"/>
+    </radialGradient>
+    <radialGradient id="meniscusFill" cx="50%" cy="35%" r="60%">
+      <stop offset="0" stop-color="#7e7e7e"/>
+      <stop offset="0.7" stop-color="#6c6c6c"/>
+      <stop offset="1" stop-color="#5c5c5c"/>
+    </radialGradient>
+
+    <!-- stamp -->
+    <linearGradient id="handleShade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4c4c4c"/>
+      <stop offset="0.3" stop-color="#9c9c9c"/>
+      <stop offset="0.65" stop-color="#5a5a5a"/>
+      <stop offset="1" stop-color="#2c2c2c"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6a6a6a"/>
+      <stop offset="0.22" stop-color="#e4e4e4"/>
+      <stop offset="0.45" stop-color="#959595"/>
+      <stop offset="0.8" stop-color="#4a4a4a"/>
+      <stop offset="1" stop-color="#7a7a7a"/>
+    </linearGradient>
+    <radialGradient id="dieFace" cx="40%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#c8c8c8"/>
+      <stop offset="1" stop-color="#868686"/>
+    </radialGradient>
+    <radialGradient id="dieRim" cx="50%" cy="50%" r="50%">
+      <stop offset="0.85" stop-color="#5e5e5e"/>
+      <stop offset="1" stop-color="#3a3a3a"/>
+    </radialGradient>
+
+    <path id="arc" d="M 88,200 A 112 112 0 0 1 312,200"/>
+    <path id="textArc" d="M -45,0 A 45 45 0 0 1 45,0"/>
+    <path id="leaf" d="M0,0 C-6,-10 -22,-14 -22,-30 C-22,-42 -8,-46 0,-36 C8,-46 22,-42 22,-30 C22,-14 6,-10 0,0 Z"/>
+    <g id="clover">
+      <use href="#leaf" transform="rotate(45)"/>
+      <use href="#leaf" transform="rotate(135)"/>
+      <use href="#leaf" transform="rotate(225)"/>
+      <use href="#leaf" transform="rotate(315)"/>
+      <path d="M0,0 C5,18 12,34 26,50" fill="none" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <path id="handlePath" d="M120,192 C112,150 98,122 100,86 C102,46 125,28 150,28 C175,28 198,46 200,86 C202,122 188,150 180,192 Z"/>
+  </defs>
+
+  <!-- ENVELOPE — "Fold the Flap" closed state (400×260 artwork, ×1.2), flap tip (206.3,148.1) placed under the seal at (200,470) -->
+  <g id="envelope" transform="translate(-47.56 390.03) scale(1.2 .54)" pointer-events="none">
+    <defs>
+      <clipPath id="envFlapClip"><path d="M172.8 125 L2 2 H398 L237.6 125 Z"/></clipPath>
+      <linearGradient id="envCrease" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#000" stop-opacity=".22"/>
+        <stop offset=".35" stop-color="#000" stop-opacity=".07"/>
+        <stop offset="1" stop-color="#000" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="envContact" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation=".9"/></filter>
+    </defs>
+    <!-- body -->
+    <rect x="2" y="2" width="396" height="256" rx="6" fill="#9e9e9e" stroke="#555555" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M4 6 L186 144 L4 254 Z" fill="#c2c2c2" stroke="#6e6e6e" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M396 6 L214 144 L396 254 Z" fill="#c2c2c2" stroke="#6e6e6e" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M4 256 L200 122 L396 256 Z" fill="#d6d6d6" stroke="#6e6e6e" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="2" y="2" width="396" height="256" rx="6" fill="none" stroke="#555555" stroke-width="3"/>
+    <!-- side folds tucked under the closed flap edge -->
+    <path d="M3.6 3.1 L183.4 132.6 L175.9 138.3 L4 8.2 Z" fill="#c2c2c2"/>
+    <path d="M396.4 3.2 L222.4 136.7 L224.0 138.3 L396 8.2 Z" fill="#c2c2c2"/>
+    <!-- thin contact shadow of the flush flap -->
+    <path d="M2 2 L398 2 L206.4 148 Z" fill="#000" opacity=".26" filter="url(#envContact)" transform="translate(0 .8)"/>
+    <!-- closed flap -->
+    <path d="M172.8 125 L2 2 H398 L237.6 125 Z" fill="#e4e4e4"/>
+    <rect x="0" y="3" width="400" height="16" fill="url(#envCrease)" opacity=".55" clip-path="url(#envFlapClip)"/>
+    <path d="M172.8 125 L2 2 H398 L237.6 125" fill="none" stroke="#555555" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M172.8 124.2 L206.3 148.1 L237.6 124.2 Z" fill="#e4e4e4"/>
+    <path d="M172.8 125 L206.3 148.1 L237.6 125" fill="none" stroke="#555555" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+
+  <!-- WAX SEAL (scaled from 400×400 artwork, centred at 200,470) -->
+  <g id="seal" transform="translate(200 470) scale(.55 .2475) translate(-200 -200)" pointer-events="none">
+    <circle cx="208" cy="212" r="168" fill="#000" opacity="0.35" filter="url(#roughShadow)"/>
+    <circle cx="200" cy="200" r="168" fill="url(#wax)" filter="url(#rough)"/>
+    <g id="gloss" opacity=".3">
+      <ellipse cx="140" cy="118" rx="52" ry="22" transform="rotate(-38 140 118)" fill="#fff" opacity="0.22" filter="url(#blur8)"/>
+    </g>
+
+    <g id="design">
+      <circle cx="197" cy="197" r="141" fill="#2e2e2e" filter="url(#blur2)"/>
+      <circle cx="203" cy="203" r="141" fill="#bdbdbd" filter="url(#blur2)"/>
+      <circle cx="200" cy="200" r="139" fill="url(#well)"/>
+      <g fill="none" stroke-width="2.2">
+        <circle cx="201.3" cy="201.3" r="131" stroke="#333"/>
+        <circle cx="198.8" cy="198.8" r="131" stroke="#cfcfcf"/>
+        <circle cx="200" cy="200" r="131" stroke="#858585"/>
+      </g>
+      <g fill="none" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="0 11">
+        <circle cx="201.2" cy="201.2" r="92" stroke="#333"/>
+        <circle cx="198.9" cy="198.9" r="92" stroke="#d2d2d2"/>
+        <circle cx="200" cy="200" r="92" stroke="#888"/>
+      </g>
+      <g font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="36" letter-spacing="5" text-anchor="middle">
+        <text fill="#2f2f2f" transform="translate(1.5 1.5)"><textPath href="#arc" startOffset="50%">Emily</textPath></text>
+        <text fill="#d4d4d4" transform="translate(-1.2 -1.2)"><textPath href="#arc" startOffset="50%">Emily</textPath></text>
+        <text fill="#878787"><textPath href="#arc" startOffset="50%">Emily</textPath></text>
+      </g>
+      <g transform="translate(201.6 207.6) scale(1.45)" fill="#2f2f2f" stroke="#2f2f2f"><use href="#clover"/></g>
+      <g transform="translate(198.8 204.8) scale(1.45)" fill="#d4d4d4" stroke="#d4d4d4"><use href="#clover"/></g>
+      <g transform="translate(200 206) scale(1.45)" fill="#868686" stroke="#868686"><use href="#clover"/></g>
+      <g transform="translate(200 206) scale(1.45)" stroke="#6a6a6a" stroke-width="1" stroke-linecap="round" fill="none">
+        <path d="M0,-6 L0,-30" transform="rotate(45)"/>
+        <path d="M0,-6 L0,-30" transform="rotate(135)"/>
+        <path d="M0,-6 L0,-30" transform="rotate(225)"/>
+        <path d="M0,-6 L0,-30" transform="rotate(315)"/>
+      </g>
+    </g>
+
+    <!-- cooled, matte wax that hides the impression until the stamp lifts -->
+    <g id="matteCover" filter="url(#blur2)">
+      <circle cx="200" cy="200" r="146" fill="url(#matte)" filter="url(#grain)"/>
+    </g>
+  </g>
+
+  <!-- cast shadow of the stamp -->
+  <ellipse id="cast" cx="204" cy="474" rx="70" ry="16" fill="#000" opacity=".4" filter="url(#castBlur)" pointer-events="none"/>
+
+  <!-- STAMP (upright; die centre 150,312 placed at 200,470) -->
+  <g id="stamp" transform="translate(50 158)">
+    <use id="halo" href="#handlePath" fill="#fff" filter="url(#haloBlur)" pointer-events="none"/>
+
+    <g id="handle" pointer-events="none">
+      <use href="#handlePath" fill="url(#handleShade)"/>
+      <ellipse cx="128" cy="80" rx="9" ry="38" fill="#fff" opacity="0.28"/>
+      <path d="M186,70 C192,100 190,130 182,165" fill="none" stroke="#1e1e1e" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
+      <use id="glow" href="#handlePath" fill="#fff"/>
+    </g>
+
+    <!-- base: a cylinder seen from the same height as the paper (ellipse ratio .45) -->
+    <g id="base" pointer-events="none">
+      <g id="base-body">
+        <path d="M78,312 L78,272 A72,32.4 0 0 1 222,272 L222,312 A72,32.4 0 0 1 78,312 Z" fill="url(#metal)"/>
+        <ellipse cx="150" cy="272" rx="72" ry="32.4" fill="url(#metal)" opacity=".55"/>
+        <path d="M78,272 A72,32.4 0 0 0 222,272" fill="none" stroke="#2e2e2e" stroke-width="1.5" opacity="0.5"/>
+        <path d="M79,275 A71,31.4 0 0 0 221,275" fill="none" stroke="#f2f2f2" stroke-width="1.2" opacity="0.6"/>
+        <path d="M78,312 A72,32.4 0 0 0 222,312" fill="none" stroke="#2e2e2e" stroke-width="1.2" opacity="0.35"/>
+        <!-- socket where the shaft meets the top face -->
+        <ellipse cx="150" cy="272" rx="20" ry="9" fill="#000" opacity=".22"/>
+      </g>
+    </g>
+
+    <g id="stem" pointer-events="none">
+      <rect x="114" y="188" width="72" height="12" rx="6" fill="url(#metal)"/>
+      <path d="M134,200 L134,272 A16,7.2 0 0 0 166,272 L166,200 Z" fill="url(#metal)"/>
+      <rect x="128" y="226" width="44" height="7" rx="3.5" fill="url(#metal)"/>
+      <rect x="134" y="200" width="32" height="4" fill="#000" opacity="0.25"/>
+    </g>
+
+    <!-- engraved face sits flat against the paper, so it is never visible from this viewpoint -->
+    <g id="die-stub" display="none">
+      <g id="die-face" transform="translate(150 312) scale(1 0.5)" opacity="0">
+        <circle r="72" fill="url(#dieRim)"/>
+        <circle r="65" fill="url(#dieFace)"/>
+        <circle r="65" fill="none" stroke="#3c3c3c" stroke-width="1.5"/>
+        <g fill="none" stroke-width="2">
+          <circle r="59" stroke="#3a3a3a" transform="translate(1 1)"/>
+          <circle r="59" stroke="#f0f0f0" transform="translate(-0.8 -0.8)"/>
+          <circle r="59" stroke="#a6a6a6"/>
+        </g>
+        <g font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="18" letter-spacing="2" text-anchor="middle">
+          <text fill="#3a3a3a" transform="translate(1.1 1.1)"><textPath href="#textArc" startOffset="50%">Emily</textPath></text>
+          <text fill="#f2f2f2" transform="translate(-0.9 -0.9)"><textPath href="#textArc" startOffset="50%">Emily</textPath></text>
+          <text fill="#a4a4a4"><textPath href="#textArc" startOffset="50%">Emily</textPath></text>
+        </g>
+        <g transform="translate(1.2 11.2) scale(0.62)" fill="#3a3a3a" stroke="#3a3a3a"><use href="#clover"/></g>
+        <g transform="translate(-0.9 9.1) scale(0.62)" fill="#f2f2f2" stroke="#f2f2f2"><use href="#clover"/></g>
+        <g transform="translate(0 10) scale(0.62)" fill="#a2a2a2" stroke="#a2a2a2"><use href="#clover"/></g>
+      </g>
+    </g>
+
+    <!-- pull signifier: faint outline drifting upward -->
+    <g pointer-events="none"><use id="hint" href="#handlePath" fill="none" stroke="#fff" stroke-width="1.6"/></g>
+
+    <!-- generous grab target over the handle -->
+    <use id="hit" href="#handlePath" fill="transparent" stroke="transparent" stroke-width="26" stroke-linejoin="round" tabindex="0" role="slider" aria-label="Stamp handle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"/>
+  </g>
+
+  <!-- wax gripping the base of the stamp -->
+  <path id="meniscus" fill="url(#meniscusFill)" filter="url(#soft)" pointer-events="none"/>
+</svg>
+</main>
+
+<button class="reset" id="reset" type="button" aria-label="Reset" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.6h3.6"/>
+  </svg>
+</button>
+
+<script src="scene-bridge.js"></script>
+<script>
+(() => {
+  const svg = document.getElementById('scene');
+  const $ = id => document.getElementById(id);
+  const stamp = $('stamp'), hit = $('hit'), die = $('die-face'), men = $('meniscus');
+  const cast = $('cast'), castStd = $('castBlurStd'), matte = $('matteCover'), gloss = $('gloss');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const T = 92;      // pull needed to break the tack
+  const S = 9;       // max creep while stuck
+  const MAX = 150;   // highest lift
+  const REST = 122;  // where a freed stamp hovers
+
+  let lift = 0, v = 0, target = 0, pull = 0, p = 0;
+  let gripping = false, released = false, finalize = false;
+  let startY = 0, dragBase = 0, releasePull = 0, kbTimer = null;
+
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const ease = x => 1 - Math.pow(1 - x, 3);
+
+  function svgY(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse()).y;
+  }
+
+  // ---- sound ----
+  let ac = null;
+  function audio() {
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+    } catch (_) {}
+  }
+  function releaseSound() {
+    if (!ac) return;
+    const t = ac.currentTime;
+    const master = ac.createGain(); master.gain.value = .7; master.connect(ac.destination);
+    // soft peel: filtered noise
+    const len = Math.floor(ac.sampleRate * .16);
+    const buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+    const n = ac.createBufferSource(); n.buffer = buf;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(2200, t); bp.frequency.exponentialRampToValueAtTime(700, t + .12); bp.Q.value = .8;
+    const ng = ac.createGain(); ng.gain.setValueAtTime(0, t); ng.gain.linearRampToValueAtTime(.16, t + .006); ng.gain.exponentialRampToValueAtTime(.001, t + .14);
+    n.connect(bp).connect(ng).connect(master); n.start(t); n.stop(t + .17);
+    // low, round release
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(80, t + .16);
+    const og = ac.createGain(); og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(.22, t + .01); og.gain.exponentialRampToValueAtTime(.001, t + .22);
+    o.connect(og).connect(master); o.start(t); o.stop(t + .24);
+  }
+
+  function setHot(on) { svg.classList.toggle('hot', on); }
+  function syncHint() { svg.classList.toggle('hint-off', gripping || released); }
+
+  function breakFree() {
+    released = true;
+    SceneBridge.complete();
+    releasePull = pull;
+    target = S + 28;
+    v = reduce ? 0 : 560;
+    releaseSound();
+    try { navigator.vibrate && navigator.vibrate(14); } catch (_) {}
+    svg.classList.add('released');
+    syncHint();
+  }
+
+  function beginGrip(y) {
+    audio();
+    gripping = true;
+    startY = y;
+    dragBase = lift;
+    pull = 0;
+    finalize = false;
+    svg.classList.add('gripping');
+    setHot(true);
+    syncHint();
+  }
+
+  function endGrip() {
+    gripping = false;
+    svg.classList.remove('gripping');
+    if (!released) { target = 0; pull = 0; }
+    else { target = clamp(Math.max(lift, REST), REST, MAX); finalize = true; }
+    syncHint();
+  }
+
+  // ---- pointer ----
+  hit.addEventListener('pointerenter', () => setHot(true));
+  hit.addEventListener('pointerleave', () => { if (!gripping) setHot(false); });
+  hit.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    svg.setPointerCapture(e.pointerId);
+    beginGrip(svgY(e));
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!gripping) return;
+    const d = startY - svgY(e);
+    if (released) {
+      if (releasePull !== null && dragBase < S + 1) target = clamp(S + 28 + (d - releasePull) * 1.1, 24, MAX);
+      else target = clamp(dragBase + d, 24, MAX);
+    } else {
+      pull = Math.max(0, d);
+      if (pull >= T) breakFree();
+    }
+  });
+  const up = e => {
+    if (!gripping) return;
+    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+    endGrip();
+    if (e.pointerType !== 'mouse') setHot(false);
+    else setHot(hit.matches(':hover'));
+  };
+  svg.addEventListener('pointerup', up);
+  svg.addEventListener('pointercancel', up);
+
+  // ---- keyboard: hold/press ArrowUp to pull ----
+  hit.addEventListener('focus', () => setHot(true));
+  hit.addEventListener('blur', () => { if (!gripping) setHot(false); });
+  hit.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowUp' && e.key !== ' ') return;
+    e.preventDefault();
+    if (!gripping) { beginGrip(0); }
+    if (!released) { pull += 14; if (pull >= T) breakFree(); }
+    else target = clamp(Math.max(target, lift) + 24, 24, MAX);
+    clearTimeout(kbTimer);
+    kbTimer = setTimeout(endGrip, 600);
+  });
+
+  // ---- reset ----
+  $('reset').addEventListener('click', () => {
+    released = false; finalize = false; gripping = false; pull = 0; target = 0;
+    v = 0; releasePull = 0;
+    svg.classList.remove('released', 'gripping');
+    syncHint();
+  });
+
+  // ---- loop ----
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(1 / 30, (now - last) / 1000); last = now;
+    let jx = 0, rot = 0, tension = 0;
+
+    if (gripping && !released) {
+      tension = clamp(pull / T, 0, 1);
+      const creep = S * (1 - Math.exp(-pull / 36));
+      lift += (creep - lift) * Math.min(1, dt * 22);
+      v = 0;
+      if (!reduce && tension > .45) {
+        const k = (tension - .45) / .55;
+        jx = Math.sin(now * .09) * .55 * k;
+        rot = Math.sin(now * .063) * .5 * k;
+      }
+    } else {
+      const k = released ? 190 : 320, c = released ? 15 : 19;
+      v += ((target - lift) * k - v * c) * dt;
+      lift += v * dt;
+      if (!released && lift < 0) { lift = 0; v = -v * .2; }
+    }
+
+    // reveal progress
+    if (released) {
+      p = Math.max(p, clamp((lift - 12) / 100, 0, 1));
+      if (finalize) p += (1 - p) * Math.min(1, dt * 3.5);
+    } else {
+      p += (0 - p) * Math.min(1, dt * 5);
+    }
+
+    // stamp
+    stamp.setAttribute('transform', `translate(${(50 + jx).toFixed(2)} ${(158 - lift).toFixed(2)}) rotate(${rot.toFixed(2)} 150 300)`);
+    // wax collar in front of the sunk base: its upper edge clings to the base's bottom rim
+    // and stretches as the base rises; it lets go on release
+    const SINK = 8, K = .45;
+    const cling = released ? clamp(1 - (lift - S) / 16, 0, 1) : 1;
+    const rimY = 470 - SINK - Math.min(lift, S + 4);
+    const cr = 80 - tension * 3;
+    men.setAttribute('d',
+      `M128,${rimY.toFixed(2)} A72,${(72 * K).toFixed(2)} 0 0 0 272,${rimY.toFixed(2)} ` +
+      `L${(200 + cr).toFixed(2)},470 A${cr.toFixed(2)},${(cr * K).toFixed(2)} 0 0 1 ${(200 - cr).toFixed(2)},470 Z`);
+    men.setAttribute('opacity', cling.toFixed(3));
+
+    // cast shadow on the paper plane: tighter/darker on contact, wider/fainter as it rises
+    const hot = svg.classList.contains('hot');
+    const L = clamp(lift / MAX, 0, 1);
+    cast.setAttribute('rx', (78 + L * 30).toFixed(2));
+    cast.setAttribute('ry', ((78 + L * 30) * K).toFixed(2));
+    cast.setAttribute('cy', (472 + L * 4).toFixed(2));
+    cast.setAttribute('cx', (204 + L * 10 + (hot ? 2 : 0)).toFixed(2));
+    cast.setAttribute('opacity', ((hot ? .48 : .4) * (1 - L * .72)).toFixed(3));
+    castStd.setAttribute('stdDeviation', (3 + L * 9).toFixed(2));
+
+    // matte → reveal
+    const e = ease(clamp(p, 0, 1));
+    matte.setAttribute('opacity', (1 - e).toFixed(3));
+    gloss.setAttribute('opacity', (.3 + .7 * e).toFixed(3));
+
+    hit.setAttribute('aria-valuenow', Math.round(released ? 100 : (pull / T) * 100));
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  SceneBridge.register({
+    reset: () => $('reset').click(),
+    focusTarget: () => hit,
+    anchor: () => { const m = svg.getScreenCTM(); return { x: m.a * 200 + m.c * 470 + m.e, y: m.b * 200 + m.d * 470 + m.f }; }
+  });
+})();
+</script>
+
+</body></html>

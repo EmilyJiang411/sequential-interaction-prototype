@@ -1,0 +1,423 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Fold the Flap</title>
+<style>
+  /* Layout: one centered stage, envelope body fixed, flap hinged on its top edge; reset pinned bottom-center */
+  :root {
+    --bg: #e9e9e9;
+    --btn: #f4f4f4;
+    --btn-line: #c4c4c4;
+    --icon: #5a5a5a;
+    --focus: #333333;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1d1d1d; --btn: #2a2a2a; --btn-line: #444444; --icon: #bdbdbd; --focus: #e0e0e0;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1d1d1d; --btn: #2a2a2a; --btn-line: #444444; --icon: #bdbdbd; --focus: #e0e0e0;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding-inline: 16px;
+    padding-block: 24px 96px;
+    box-sizing: border-box;
+  }
+  .frame { position: relative; }
+  .stage {
+    position: absolute; left: 0; top: 0;
+    width: 400px; height: 440px;
+    transform-origin: 0 0;
+  }
+  .unit {
+    position: absolute; inset: 0;
+    perspective: 1100px;
+    perspective-origin: 200px 162px;
+    transition: transform 150ms cubic-bezier(.2,.7,.3,1);
+  }
+  .unit.press { transform: translateY(1.2px); transition-duration: 35ms; }
+  .env { position: absolute; left: 0; top: 160px; width: 400px; height: 260px; }
+  .env > svg { display: block; position: relative; }
+  .env > svg.seam { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; transition: opacity 60ms linear; }
+  .is-flush .env > svg.seam { opacity: 1; }
+  .cast {
+    position: absolute; left: 0; top: 0; width: 400px; height: 160px;
+    transform-origin: 200px 2px;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .cast-shape {
+    width: 100%; height: 100%;
+    background: #000;
+    clip-path: polygon(0.5% 1.25%, 99.5% 1.25%, 51.6% 92.5%);
+  }
+  .flap {
+    position: absolute; left: 0; top: 160px; width: 400px; height: 160px;
+    transform-origin: 200px 2px;
+    will-change: transform, filter;
+    pointer-events: none;
+  }
+  .flap svg { display: block; overflow: visible; }
+  .hit { fill: transparent; pointer-events: all; cursor: grab; outline: none; }
+  .hit:focus-visible { stroke: var(--focus); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .is-closed .hit { pointer-events: none; cursor: default; }
+  body.is-dragging, body.is-dragging .hit { cursor: grabbing; }
+
+  .crease { opacity: .55; transition: opacity 200ms ease-out; }
+  .is-hot .crease { opacity: 1; }
+
+  .reset {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--btn-line);
+    background: var(--btn);
+    display: grid; place-items: center;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 120ms ease-out;
+  }
+  .reset:active { transform: translateX(-50%) scale(.94); }
+  .reset:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .reset svg { width: 18px; height: 18px; stroke: var(--icon); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+
+<main class="app">
+  <div class="frame" id="frame">
+    <div class="stage" id="stage">
+      <div class="unit" id="unit">
+        <!-- Envelope body (stationary) -->
+        <div class="env">
+          <svg xmlns="http://www.w3.org/2000/svg" width="400" height="260" viewBox="0 0 400 260" aria-hidden="true">
+            <rect x="2" y="2" width="396" height="256" rx="6" fill="#9e9e9e" stroke="#555555" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M4 6 L186 144 L4 254 Z" fill="#c2c2c2" stroke="#6e6e6e" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M396 6 L214 144 L396 254 Z" fill="#c2c2c2" stroke="#6e6e6e" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M4 256 L200 122 L396 256 Z" fill="#d6d6d6" stroke="#6e6e6e" stroke-width="2" stroke-linejoin="round"/>
+            <rect x="2" y="2" width="396" height="256" rx="6" fill="none" stroke="#555555" stroke-width="3"/>
+          </svg>
+          <!-- Under-flap fill: when closed, the side folds tuck under the flap edge so only one edge shows -->
+          <svg class="seam" xmlns="http://www.w3.org/2000/svg" width="400" height="260" viewBox="0 0 400 260" aria-hidden="true">
+            <path d="M3.6 3.1 L183.4 132.6 L175.9 138.3 L4 8.2 Z" fill="#c2c2c2"/>
+            <path d="M396.4 3.2 L222.4 136.7 L224.0 138.3 L396 8.2 Z" fill="#c2c2c2"/>
+          </svg>
+          <!-- Flap's cast shadow on the body -->
+          <div class="cast" id="cast"><div class="cast-shape"></div></div>
+        </div>
+
+        <!-- Flap (hinged on its long edge) -->
+        <div class="flap" id="flap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="400" height="160" viewBox="0 0 400 160">
+            <defs>
+              <clipPath id="flapClip"><path d="M172.8 125 L2 2 H398 L237.6 125 Z"/></clipPath>
+              <linearGradient id="creaseGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#000" stop-opacity=".22"/>
+                <stop offset=".35" stop-color="#000" stop-opacity=".07"/>
+                <stop offset="1" stop-color="#000" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="underGrad" gradientUnits="userSpaceOnUse" x1="0" y1="125" x2="0" y2="102">
+                <stop id="ug0" offset="0" stop-color="#ececec"/>
+                <stop id="ug1" offset="1" stop-color="#fafafa"/>
+              </linearGradient>
+              <filter id="soft" x="-40%" y="-60%" width="180%" height="220%">
+                <feGaussianBlur stdDeviation="2.2"/>
+              </filter>
+            </defs>
+            <!-- Flap face, corner folded back along the fold line y=125 -->
+            <path d="M172.8 125 L2 2 H398 L237.6 125 Z" fill="#e4e4e4"/>
+            <rect class="crease" x="0" y="3" width="400" height="16" fill="url(#creaseGrad)" clip-path="url(#flapClip)"/>
+            <!-- Shadow the lifted corner casts on the flap -->
+            <path id="cornerShadow" fill="#000" filter="url(#soft)" clip-path="url(#flapClip)" opacity="0"/>
+            <path d="M172.8 125 L2 2 H398 L237.6 125" fill="none" stroke="#555555" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- Folded corner (dog-ear) -->
+            <path id="cornerFill" fill="url(#underGrad)"/>
+            <path id="cornerEdge" fill="none" stroke="#555555" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <line id="foldLine" x1="172.8" y1="125" x2="237.6" y2="125" stroke="#555555" stroke-width="2" stroke-linecap="round"/>
+            <!-- Grab target around the corner -->
+            <rect class="hit" id="hit" x="158" y="84" width="96" height="78" rx="22" tabindex="0" role="button" aria-label="Fold the flap"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<button class="reset" id="reset" type="button" aria-label="Reset">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4.5v3.8h3.8"/></svg>
+</button>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const frame = $('frame'), stage = $('stage'), unit = $('unit');
+  const flap = $('flap'), cast = $('cast'), hit = $('hit'), reset = $('reset');
+  const cornerFill = $('cornerFill'), cornerEdge = $('cornerEdge');
+  const cornerShadow = $('cornerShadow'), foldLine = $('foldLine');
+  const ug0 = $('ug0'), ug1 = $('ug1');
+  const root = document.body;
+
+  const W = 400, H = 440, HINGE_Y = 162;
+  const REST = 168, HOVER = 159;           // flap angle when open (180 = flat open)
+  const SNAP_DRAG = 15, SNAP_RELEASE = 34; // degrees from closed
+  const REACH = 142;                       // hinge-to-grab distance on the flap
+
+  // Dog-ear geometry: fold line at y=125, tip of the full point at (206.3, 148.1)
+  const AX = 172.8, BX = 237.6, FY = 125, TX = 206.3, TIP = 23.1;
+  // Corner fold angle φ: 180 = lying flat on the flap, 0 = unfolded flush with the flap
+  const PHI_REST = 150, PHI_HOT = 124;
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const T = d => reduce ? d * 0.4 : d;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const rad = d => d * Math.PI / 180;
+  const smooth = t => t * t * (3 - 2 * t);
+
+  let scale = 1, theta = REST, phi = PHI_REST;
+  let state = 'open';   // open | drag | anim | closed
+  let hot = false, hovering = false;
+  let anim = null, drag = null, lastT = performance.now();
+
+  function layout() {
+    const availW = window.innerWidth - 32;
+    const availH = window.innerHeight - 120;
+    scale = clamp(Math.min(availW / W, availH / H), 0.3, 1.7);
+    frame.style.width = (W * scale) + 'px';
+    frame.style.height = (H * scale) + 'px';
+    stage.style.transform = `scale(${scale})`;
+  }
+
+  // Corner angle the flap angle asks for: the pull straightens the corner as the fold closes
+  function phiTarget() {
+    if (state === 'closed') return 0;
+    const base = hot ? PHI_HOT : PHI_REST;
+    const t = smooth(clamp((theta - 12) / 58, 0, 1));
+    return base * t;
+  }
+
+  function renderCorner() {
+    const c = Math.cos(rad(phi)), s = Math.sin(rad(phi));
+    const py = FY + TIP * c;
+    // overlap the fold line slightly when unfolded so no hairline seam shows
+    const fy0 = c > 0 ? FY - 0.8 : FY;
+    const d = `M${AX} ${fy0} L${TX} ${py.toFixed(2)} L${BX} ${fy0} Z`;
+    cornerFill.setAttribute('d', d);
+    cornerEdge.setAttribute('d', `M${AX} ${FY} L${TX} ${py.toFixed(2)} L${BX} ${FY}`);
+
+    if (c < 0) {
+      // underside showing: light paper, a touch darker when standing up
+      const top = Math.round(250 - 26 * s), base = Math.round(238 - 22 * s);
+      ug0.setAttribute('stop-color', `rgb(${base},${base},${base})`);
+      ug1.setAttribute('stop-color', `rgb(${top},${top},${top})`);
+      cornerFill.setAttribute('fill', 'url(#underGrad)');
+    } else {
+      const g = Math.round(228 - 34 * s);
+      cornerFill.setAttribute('fill', `rgb(${g},${g},${g})`);
+    }
+    foldLine.setAttribute('opacity', clamp(phi / 40, 0, 1).toFixed(3));
+    // match the flap's 3px outline when the corner lies flush, so the edge is one continuous line
+    cornerEdge.setAttribute('stroke-width', (c > 0 ? 3 - 1.2 * s : 1.6 + 0.9 * Math.abs(c)).toFixed(2));
+
+    // shadow under the raised corner, falling back onto the flap
+    const lift = s;
+    const reach = TIP * Math.max(-c, 0) + 3 + 7 * lift;
+    cornerShadow.setAttribute('d',
+      `M${AX - 2} ${FY} L${TX + 1.5} ${(FY - reach).toFixed(2)} L${BX + 2} ${FY} Z`);
+    const strength = hot ? 0.6 : 0.34;
+    cornerShadow.setAttribute('opacity', (strength * lift * (c < 0 ? 1 : 0.35)).toFixed(3));
+  }
+
+  function render(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    const target = phiTarget();
+    const rate = (state === 'drag' || state === 'anim') ? 34 : 16;
+    phi += (target - phi) * Math.min(1, dt * rate);
+    if (Math.abs(target - phi) < 0.05) phi = target;
+
+    flap.style.transform = `rotateX(${theta.toFixed(3)}deg)`;
+    const ca = Math.abs(Math.cos(rad(theta)));
+    flap.style.filter = `brightness(${(0.86 + 0.14 * ca).toFixed(3)})`;
+
+    // Cast shadow: strongest mid-fold, fading out as the flap meets the envelope
+    const s = Math.sin(rad(Math.min(theta, 90)));
+    const sy = theta <= 90 ? 0.25 + 0.75 * Math.cos(rad(theta))
+                           : clamp(0.25 * (1 - (theta - 90) / 40), 0.02, 0.25);
+    const far = Math.pow(clamp((118 - theta) / 118, 0, 1), 1.3);
+    const near = smooth(clamp(theta / 45, 0, 1));
+    // Thin contact shadow once the flap is flush
+    const contact = theta < 6 ? 0.26 * (1 - theta / 6) : 0;
+    cast.style.opacity = Math.max(0.36 * far * near, contact).toFixed(3);
+    cast.style.transform = `translateY(${(0.8 + s * 7.2).toFixed(2)}px) scaleY(${sy.toFixed(3)})`;
+    cast.style.filter = `blur(${(0.9 + s * 9).toFixed(2)}px)`;
+
+    renderCorner();
+    requestAnimationFrame(render);
+  }
+
+  function tween(to, dur, ease, done) {
+    cancelAnimationFrame(anim);
+    const from = theta, start = performance.now();
+    const step = now => {
+      const p = dur <= 0 ? 1 : clamp((now - start) / dur, 0, 1);
+      theta = from + (to - from) * ease(p);
+      if (p < 1) anim = requestAnimationFrame(step);
+      else { anim = null; done && done(); }
+    };
+    anim = requestAnimationFrame(step);
+  }
+  const easeOut = p => 1 - Math.pow(1 - p, 3);
+  const easeIn  = p => p * p * p;
+  const easeOutBack = p => { const c1 = 1.2, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); };
+
+  function setHot(on) { hot = on; root.classList.toggle('is-hot', on); }
+
+  // ---------- Sound: subtle paper snap ----------
+  let ac = null, noise = null;
+  function initAudio() {
+    if (!ac) {
+      try {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        const len = Math.floor(ac.sampleRate * 0.12);
+        noise = ac.createBuffer(1, len, ac.sampleRate);
+        const d = noise.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      } catch (e) { ac = null; }
+    }
+    if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+  }
+  function burst(type, freq, q, peak, decay, at) {
+    const src = ac.createBufferSource(); src.buffer = noise;
+    const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(peak, at + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+    src.connect(f).connect(g).connect(ac.destination);
+    src.start(at); src.stop(at + decay + 0.02);
+  }
+  function paperSnap() {
+    if (!ac) return;
+    const t = ac.currentTime;
+    burst('highpass', 3800, 0.7, 0.07, 0.025, t);       // crisp edge tick
+    burst('bandpass', 2400, 0.8, 0.06, 0.07, t);        // paper hiss
+    burst('lowpass', 240, 0.7, 0.22, 0.045, t);         // soft contact
+  }
+
+  // ---------- Transitions ----------
+  function closeFlap() {
+    state = 'anim';
+    root.classList.remove('is-dragging');
+    const dur = T(60 + theta * 2.6);
+    tween(0, dur, easeIn, () => {
+      phi = 0;               // corner presses flush on impact
+      root.classList.add('is-flush');
+      setHot(false);
+      paperSnap();
+      unit.classList.add('press');
+      setTimeout(() => unit.classList.remove('press'), 45);
+      tween(0.7, T(40), easeOut, () => tween(0, T(70), easeIn, () => {
+        state = 'closed';
+        root.classList.add('is-closed');
+      }));
+    });
+  }
+
+  function reopen(gentle) {
+    state = 'anim';
+    root.classList.remove('is-flush');
+    root.classList.remove('is-dragging');
+    tween(hovering ? HOVER : REST, T(gentle ? 560 : 650), gentle ? easeOutBack : easeOut, () => {
+      state = 'open';
+      setHot(hovering);
+    });
+  }
+
+  // ---------- Hover affordance ----------
+  hit.addEventListener('pointerenter', () => {
+    hovering = true;
+    if (state !== 'open') return;
+    setHot(true);
+    tween(HOVER, T(200), easeOut);
+  });
+  hit.addEventListener('pointerleave', () => {
+    hovering = false;
+    if (state !== 'open') return;
+    setHot(false);
+    tween(REST, T(260), easeOut);
+  });
+
+  // ---------- Drag ----------
+  function hingeScreenY() { return stage.getBoundingClientRect().top + HINGE_Y * scale; }
+
+  hit.addEventListener('pointerdown', e => {
+    if (state === 'closed') return;
+    if (state === 'anim' && theta < 60) return;
+    e.preventDefault();
+    initAudio();
+    cancelAnimationFrame(anim);
+    try { hit.setPointerCapture(e.pointerId); } catch (_) {}
+    state = 'drag';
+    setHot(true);
+    root.classList.add('is-dragging');
+    if (theta > HOVER) theta = Math.max(HOVER, theta - 4);   // lift on contact
+    const dy = (e.clientY - hingeScreenY()) / scale;
+    drag = { id: e.pointerId, dy0: dy, c0: Math.cos(rad(theta)) };
+  });
+
+  window.addEventListener('pointermove', e => {
+    if (state !== 'drag' || !drag || e.pointerId !== drag.id) return;
+    const dy = (e.clientY - hingeScreenY()) / scale;
+    const c = clamp(drag.c0 + (dy - drag.dy0) / REACH, -1, 1);
+    theta = Math.acos(c) * 180 / Math.PI;
+    if (theta < SNAP_DRAG) { drag = null; closeFlap(); }
+  });
+
+  function release(e) {
+    if (state !== 'drag' || !drag || e.pointerId !== drag.id) return;
+    drag = null;
+    if (theta < SNAP_RELEASE) closeFlap();
+    else {
+      if (e.pointerType !== 'mouse') hovering = false;
+      if (!hovering) setHot(false);
+      reopen(true);
+    }
+  }
+  window.addEventListener('pointerup', release);
+  window.addEventListener('pointercancel', release);
+
+  hit.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && state === 'open') {
+      e.preventDefault(); initAudio(); setHot(true); closeFlap();
+    }
+  });
+
+  reset.addEventListener('click', () => {
+    initAudio();
+    drag = null;
+    root.classList.remove('is-closed', 'is-dragging');
+    hovering = false;
+    setHot(false);
+    reopen(false);
+  });
+
+  window.addEventListener('resize', layout);
+  layout();
+  requestAnimationFrame(render);
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,604 @@
+<!doctype html><html lang="en" data-scene="pour"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pour the Wax</title>
+<style>
+  /* Layout: one full-bleed stage, the study centered and scaled to fit; a quiet label and reset in the corners. */
+  :root {
+    --bg: #ededed;
+    --fg: #2b2b2b;
+    --muted: #8a8a8a;
+    --btn-bg: #f7f7f7;
+    --btn-line: #c9c9c9;
+    --btn-hover: #ffffff;
+    --focus: #555555;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    overflow: hidden;
+  }
+  .stage {
+    position: relative;
+    height: 100%;
+    min-height: 360px;
+    padding-inline: 16px;
+    padding-block: 56px 24px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #scene {
+    width: 100%;
+    height: 100%;
+    max-width: 900px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: visible;
+  }
+  .label {
+    position: absolute;
+    top: 18px; left: 20px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+    font-weight: 500;
+  }
+  .reset {
+    position: absolute;
+    top: 10px; right: 14px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--btn-line);
+    background: var(--btn-bg);
+    color: var(--fg);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background .2s, transform .4s cubic-bezier(.3,.7,.3,1);
+  }
+  .reset:hover { background: var(--btn-hover); }
+  .reset:active { transform: rotate(-70deg); }
+  .reset:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .reset svg { width: 18px; height: 18px; }
+
+  /* Spoon handle affordance */
+  #hit { cursor: grab; }
+  #scene.dragging #hit { cursor: grabbing; }
+  #scene.done #hit { cursor: default; }
+  #handle-glow { opacity: 0; transition: opacity .25s ease; pointer-events: none; }
+  #scene.hot #handle-glow { opacity: 1; }
+  #guide { opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+  #scene.hot #guide { opacity: .6; }
+  #scene.dragging #guide { opacity: .3; }
+  #scene.done #guide { opacity: 0; }
+  #handle-focus { opacity: 0; pointer-events: none; }
+  #hit:focus { outline: none; }
+  #hit:focus-visible ~ #handle-focus { opacity: 1; }
+</style>
+
+<main class="stage">
+  <button class="reset" id="reset" type="button" aria-label="Reset" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 12a8 8 0 1 0 2.4-5.7"/>
+      <path d="M4 4v4.5h4.5"/>
+    </svg>
+  </button>
+
+  <svg id="scene" viewBox="40 -20 590 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="A spoon of wax held above an envelope seam">
+    <defs>
+      <pattern id="knurl" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="8" height="8" fill="#8a8a8a"/>
+        <line x1="0" y1="0" x2="0" y2="8" stroke="#6e6e6e" stroke-width="2"/>
+        <line x1="0" y1="0" x2="8" y2="0" stroke="#a3a3a3" stroke-width="1.5"/>
+      </pattern>
+      <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b8b8b8"/>
+        <stop offset="0.5" stop-color="#9a9a9a"/>
+        <stop offset="1" stop-color="#7a7a7a"/>
+      </linearGradient>
+      <!-- Metallic sheen: specular stops slide with tilt (x1/x2 driven in script) -->
+      <linearGradient id="rim-sheen" x1="0" y1="0" x2="1" y2="0.6">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="0.18" stop-color="#ffffff" stop-opacity="0.85"/>
+        <stop offset="0.34" stop-color="#ffffff" stop-opacity="0.1"/>
+        <stop offset="0.62" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="0.82" stop-color="#ffffff" stop-opacity="0.35"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="bowl-hollow" cx="0.62" cy="0.7" r="0.75">
+        <stop offset="0" stop-color="#8c8c8c"/>
+        <stop offset="0.45" stop-color="#727272"/>
+        <stop offset="1" stop-color="#555555"/>
+      </radialGradient>
+      <linearGradient id="handle-sheen" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.55"/>
+        <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.08"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+      <marker id="guide-tip" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M1 1 L 8 5 L 1 9" fill="none" stroke="#8a8a8a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+
+    <!-- Envelope seam (target at 300,430) -->
+    <g transform="translate(100 270)">
+      <rect id="envelope-body" x="20" y="20" width="360" height="220" rx="6" fill="#e6e6e6" stroke="#9e9e9e" stroke-width="2"/>
+      <path d="M20 240 L 200 150 L 380 240" fill="none" stroke="#c4c4c4" stroke-width="1.5"/>
+      <path id="envelope-flap" d="M20 26 L 200 160 L 380 26 Z" fill="#d4d4d4" stroke="#8c8c8c" stroke-width="2" stroke-linejoin="round"/>
+      <path id="envelope-seam-shadow" d="M24 30 L 200 164 L 376 30" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="4" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Wax pool -->
+    <g id="pool" transform="translate(300 430) scale(0) translate(-150 -104)">
+      <ellipse id="wax-pool-shadow" cx="150" cy="112" rx="110" ry="52" fill="#000" opacity="0.12"/>
+      <path id="wax-pool" d="M50 104 C 50 62, 250 62, 250 104 C 250 146, 50 146, 50 104 Z"
+            fill="#c4c4c4" stroke="#8f8f8f" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      <path id="wax-pool-surface" d="M68 100 C 68 72, 232 72, 232 100 C 232 128, 68 128, 68 100 Z" fill="#d9d9d9"/>
+      <ellipse id="wax-pool-highlight" cx="118" cy="86" rx="34" ry="7" fill="#f4f4f4" opacity="0.85"/>
+    </g>
+
+    <!-- Target outline -->
+    <circle id="seal-target" cx="300" cy="430" r="26" fill="none" stroke="#9a9a9a" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/>
+
+    <!-- Wax stream -->
+    <g id="stream" style="display:none">
+      <path id="stream-body" fill="#cbcbcb" stroke="#9a9a9a" stroke-width="1.2" stroke-linejoin="round"/>
+      <path id="stream-sheen" fill="none" stroke="#f0f0f0" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/>
+      <circle id="stream-head" r="0" fill="#cbcbcb" stroke="#9a9a9a" stroke-width="1.2"/>
+    </g>
+
+    <!-- Tilt guide -->
+    <path id="guide" fill="none" stroke="#8a8a8a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 6" marker-end="url(#guide-tip)"/>
+
+    <!-- Spoon (pivot at bowl center 355,200) -->
+    <g id="spoon" transform="translate(278.5 132) scale(0.85)">
+      <g id="spoon-bowl">
+        <ellipse cx="90" cy="80" rx="70" ry="45" fill="url(#metal)" stroke="#5a5a5a" stroke-width="2"/>
+        <ellipse cx="90" cy="82" rx="58" ry="35" fill="url(#bowl-hollow)"/>
+        <!-- inner reflection on the far wall of the hollow -->
+        <path d="M122 104 C 136 98, 145 88, 146 78" fill="none" stroke="#bdbdbd" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+        <ellipse cx="72" cy="66" rx="20" ry="8" fill="#c9c9c9" opacity="0.5"/>
+        <!-- specular rim -->
+        <ellipse id="rim-glint" cx="90" cy="80" rx="68" ry="43.5" fill="none" stroke="url(#rim-sheen)" stroke-width="2.4"/>
+        <path d="M34 62 C 44 46, 66 37, 92 36" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
+      </g>
+      <path id="spoon-neck" d="M156 72 C 172 76, 180 78, 196 76 L 196 84 C 180 82, 172 84, 156 88 Z"
+            fill="url(#metal)" stroke="#5a5a5a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M160 75.5 C 174 79, 182 80, 194 78.5" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
+      <g id="spoon-handle">
+        <rect x="194" y="68" width="186" height="24" rx="12" fill="url(#knurl)" stroke="#4f4f4f" stroke-width="2"/>
+        <rect x="200" y="71" width="174" height="5" rx="2.5" fill="#ffffff" opacity="0.18"/>
+        <rect id="handle-glint" x="198" y="70" width="178" height="8" rx="4" fill="url(#handle-sheen)"/>
+        <line x1="206" y1="69" x2="206" y2="91" stroke="#4f4f4f" stroke-width="2"/>
+        <line x1="368" y1="69" x2="368" y2="91" stroke="#4f4f4f" stroke-width="2"/>
+        <line x1="208" y1="71" x2="208" y2="89" stroke="#ffffff" stroke-width="1" opacity="0.35"/>
+        <line x1="370" y1="71" x2="370" y2="89" stroke="#ffffff" stroke-width="1" opacity="0.35"/>
+      </g>
+      <rect id="handle-glow" x="192" y="66" width="190" height="28" rx="14" fill="#ffffff" fill-opacity="0.2" stroke="#e8e8e8" stroke-width="2.5"/>
+      <!-- thin film left behind once the bowl drains -->
+      <path id="spoon-residue" d="M44 88 C 52 104, 120 110, 140 92" fill="none" stroke="#c2c2c2" stroke-width="2" stroke-linecap="round" opacity="0"/>
+      <g id="spoon-wax">
+        <path id="spoon-wax-body" d="M50 82 C 50 66, 130 66, 130 82 C 130 98, 50 98, 50 82 Z"
+              fill="#d6d6d6" stroke="#a8a8a8" stroke-width="1.5"/>
+        <ellipse id="spoon-wax-highlight" cx="78" cy="76" rx="14" ry="4" fill="#f2f2f2" opacity="0.8"/>
+      </g>
+      <rect id="hit" x="186" y="44" width="204" height="72" rx="20" fill="transparent" tabindex="0"
+            role="slider" aria-label="Spoon tilt" aria-valuemin="-12" aria-valuemax="42" aria-valuenow="0"/>
+      <rect id="handle-focus" x="188" y="62" width="198" height="36" rx="18" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3 4"/>
+    </g>
+  </svg>
+</main>
+
+<script src="scene-bridge.js"></script>
+<script>
+(() => {
+  const svg = document.getElementById('scene');
+  const spoon = document.getElementById('spoon');
+  const spoonWax = document.getElementById('spoon-wax');
+  const residue = document.getElementById('spoon-residue');
+  const rimSheen = document.getElementById('rim-sheen');
+  const handleSheen = document.getElementById('handle-sheen');
+  const hit = document.getElementById('hit');
+  const pool = document.getElementById('pool');
+  const poolHL = document.getElementById('wax-pool-highlight');
+  const target = document.getElementById('seal-target');
+  const stream = document.getElementById('stream');
+  const sBody = document.getElementById('stream-body');
+  const sSheen = document.getElementById('stream-sheen');
+  const sHead = document.getElementById('stream-head');
+  const guide = document.getElementById('guide');
+  const resetBtn = document.getElementById('reset');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Geometry
+  const PX = 355, PY = 200;          // pivot = bowl center in scene
+  const SC = 0.85;                   // spoon scale
+  const LIP = 70 * SC;               // bowl lip distance from pivot
+  const TX = 300, TY = 430;          // target center
+  const POOL_HX = 0.26, POOL_HY = 0.55;
+  const MIN_TILT = -12, MAX_TILT = 42, FLOW_START = 10;
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = (rate, dt) => 1 - Math.exp(-rate * dt);
+
+  let S;
+  function freshState() {
+    return {
+      tilt: 0, tiltT: 0,
+      flowS: 0,
+      active: false, head: 0, tail: 0, landed: false,
+      out: 0,          // wax that has left the spoon (0..1)
+      vol: 0,          // wax that has landed in the pool (0..1)
+      sDisp: 0, remDisp: 1, dome: 0,
+      emptied: false,  // spoon has run dry; stream is finishing its fall
+      done: false, doneT: 0,
+      dragging: false, hover: false, keyTilt: false,
+      startAng: 0, startTilt: 0, pid: null,
+      t: 0
+    };
+  }
+  S = freshState();
+
+  // ---------- Sound (synthesized, starts on first touch) ----------
+  // A quiet, airy trickle: light noise shaped into a narrow mid-high band, with a soft,
+  // irregular grain baked in. No low end, no oscillators, no pitch sweeps.
+  const Sound = (() => {
+    let ctx = null, pourGain, band, master;
+
+    function trickleBuffer(seconds) {
+      const sr = ctx.sampleRate;
+      const len = Math.floor(sr * seconds);
+      const buf = ctx.createBuffer(1, len, sr);
+      const d = buf.getChannelData(0);
+      let amp = 0.7, target = 0.7, next = 0, b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < len; i++) {
+        if (i >= next) {                      // a new soft grain every 40–110 ms
+          target = 0.45 + Math.random() * 0.55;
+          next = i + Math.floor(sr * (0.04 + Math.random() * 0.07));
+        }
+        amp += (target - amp) * 0.0009;       // smooth, never clicky
+        const w = Math.random() * 2 - 1;      // gentle pink tilt so it isn't hissy
+        b0 = 0.997 * b0 + w * 0.029;
+        b1 = 0.985 * b1 + w * 0.032;
+        b2 = 0.950 * b2 + w * 0.048;
+        d[i] = (b0 + b1 + b2 + w * 0.05) * amp * 2.2;
+      }
+      const fade = Math.floor(sr * 0.08);     // seamless loop
+      for (let i = 0; i < fade; i++) {
+        const k = i / fade;
+        d[len - fade + i] = d[len - fade + i] * (1 - k) + d[i] * k;
+      }
+      return buf;
+    }
+
+    function init() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (ctx) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return; }
+      try { ctx = new AC(); } catch (_) { ctx = null; return; }
+
+      master = ctx.createGain(); master.gain.value = 0.5;
+      master.connect(ctx.destination);
+
+      const src = ctx.createBufferSource();
+      src.buffer = trickleBuffer(4); src.loop = true;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900; hp.Q.value = 0.5;
+      band = ctx.createBiquadFilter(); band.type = 'bandpass'; band.frequency.value = 2400; band.Q.value = 0.7;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200; lp.Q.value = 0.5;
+      pourGain = ctx.createGain(); pourGain.gain.value = 0;
+
+      src.connect(hp); hp.connect(band); band.connect(lp); lp.connect(pourGain); pourGain.connect(master);
+      src.start();
+
+      document.addEventListener('visibilitychange', () => {
+        if (!ctx) return;
+        if (document.hidden) ctx.suspend().catch(() => {}); else ctx.resume().catch(() => {});
+      });
+    }
+
+    // flow: 0..1; flowing: the stream is visibly connected from lip to pool
+    function update(flow, flowing) {
+      if (!ctx || ctx.state !== 'running') return;
+      const now = ctx.currentTime;
+      const level = flowing ? 0.03 + 0.07 * flow : 0;
+      pourGain.gain.setTargetAtTime(level, now, flowing ? 0.3 : 0.18);   // gentle fade in / out
+      band.frequency.setTargetAtTime(2200 + 400 * flow, now, 0.5);      // barely-there brightening
+    }
+
+    // One small, soft drip: a short burst of filtered noise, no pitch glide
+    function tick(t, gain, freq) {
+      const sr = ctx.sampleRate;
+      const n = Math.floor(sr * 0.05);
+      const b = ctx.createBuffer(1, n, sr);
+      const d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sr * 0.008));
+      const s = ctx.createBufferSource(); s.buffer = b;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 6;
+      const g = ctx.createGain(); g.gain.value = gain;
+      s.connect(bp); bp.connect(g); g.connect(master);
+      s.start(t);
+    }
+
+    function drip(final) {
+      if (!ctx || ctx.state !== 'running') return;
+      const t = ctx.currentTime + 0.03;
+      tick(t, 0.22, 1500);
+      if (final) tick(t + 0.6, 0.12, 1700);
+    }
+
+    function silence() {
+      if (!ctx) return;
+      pourGain.gain.cancelScheduledValues(ctx.currentTime);
+      pourGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+    }
+
+    return { init, update, drip, silence };
+  })();
+
+  // ---------- Input ----------
+  function toScene(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  const angleAt = p => Math.atan2(p.y - PY, p.x - PX) * 180 / Math.PI;
+
+  function setHot() {
+    svg.classList.toggle('hot', (S.hover || S.dragging || S.keyTilt) && !S.emptied);
+    svg.classList.toggle('dragging', S.dragging);
+    svg.classList.toggle('done', S.emptied);
+  }
+
+  hit.addEventListener('pointerenter', () => { S.hover = true; setHot(); });
+  hit.addEventListener('pointerleave', () => { S.hover = false; setHot(); });
+  hit.addEventListener('pointerdown', e => {
+    Sound.init();
+    if (S.emptied) return;
+    e.preventDefault();
+    S.dragging = true;
+    S.pid = e.pointerId;
+    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    S.tiltT = clamp(S.tiltT + 3, MIN_TILT, MAX_TILT);   // contact: slight tilt
+    S.startAng = angleAt(toScene(e));
+    S.startTilt = S.tiltT;
+    setHot();
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!S.dragging || e.pointerId !== S.pid) return;
+    const a = angleAt(toScene(e));
+    S.tiltT = clamp(S.startTilt + (S.startAng - a), MIN_TILT, MAX_TILT);
+  });
+  function endDrag() {
+    if (S.pid !== null) { try { svg.releasePointerCapture(S.pid); } catch (_) {} }
+    S.dragging = false; S.pid = null;
+    S.tiltT = 0;                                         // returns upright, pour stops
+    setHot();
+  }
+  svg.addEventListener('pointerup', e => { if (S.dragging && e.pointerId === S.pid) endDrag(); });
+  svg.addEventListener('pointercancel', e => { if (S.dragging && e.pointerId === S.pid) endDrag(); });
+
+  hit.addEventListener('keydown', e => {
+    Sound.init();
+    if (S.emptied) return;
+    const up = e.key === 'ArrowUp' || e.key === 'ArrowRight';
+    const down = e.key === 'ArrowDown' || e.key === 'ArrowLeft';
+    if (up || down) {
+      e.preventDefault();
+      S.keyTilt = true;
+      S.tiltT = clamp(S.tiltT + (up ? 4 : -4), MIN_TILT, MAX_TILT);
+      setHot();
+    } else if (e.key === 'Escape') {
+      S.tiltT = 0; S.keyTilt = false; setHot();
+    }
+  });
+  hit.addEventListener('blur', () => { if (S.keyTilt) { S.keyTilt = false; S.tiltT = 0; setHot(); } });
+
+  resetBtn.addEventListener('click', () => {
+    const hover = S.hover;
+    if (S.pid !== null) { try { svg.releasePointerCapture(S.pid); } catch (_) {} }
+    S = freshState();
+    S.hover = hover;
+    Sound.silence();
+    setHot();
+  });
+
+  // ---------- Stream geometry ----------
+  function lipPoint(tilt) {
+    const r = tilt * Math.PI / 180;
+    return { x: PX - LIP * Math.cos(r), y: PY + LIP * Math.sin(r) };
+  }
+  function bez(p0, p1, p2, p3, t) {
+    const u = 1 - t;
+    return {
+      x: u*u*u*p0.x + 3*u*u*t*p1.x + 3*u*t*t*p2.x + t*t*t*p3.x,
+      y: u*u*u*p0.y + 3*u*u*t*p1.y + 3*u*t*t*p2.y + t*t*t*p3.y
+    };
+  }
+  function bezD(p0, p1, p2, p3, t) {
+    const u = 1 - t;
+    return {
+      x: 3*u*u*(p1.x-p0.x) + 6*u*t*(p2.x-p1.x) + 3*t*t*(p3.x-p2.x),
+      y: 3*u*u*(p1.y-p0.y) + 6*u*t*(p2.y-p1.y) + 3*t*t*(p3.y-p2.y)
+    };
+  }
+
+  function drawStream(W) {
+    if (!S.active || S.head - S.tail < 0.004) { stream.style.display = 'none'; return; }
+    stream.style.display = '';
+    const p0 = lipPoint(S.tilt);
+    const landY = TY - 23 * S.sDisp * 0.35;
+    const p3 = { x: TX, y: landY };
+    const p1 = { x: p0.x - 14, y: p0.y + 20 };
+    const p2 = { x: TX + (p0.x - TX) * 0.15, y: p3.y - 95 };
+    const N = 28, L = [], R = [], C = [];
+    const wob = reduceMotion ? 0 : 1;
+    for (let i = 0; i <= N; i++) {
+      const t = S.tail + (S.head - S.tail) * (i / N);
+      const p = bez(p0, p1, p2, p3, t);
+      const d = bezD(p0, p1, p2, p3, t);
+      const len = Math.hypot(d.x, d.y) || 1;
+      const nx = -d.y / len, ny = d.x / len;
+      // viscous profile: heavy at the lip, necking as it falls, a soft splay at contact
+      let w = W * (0.5 + 0.5 * Math.pow(1 - t, 1.6));
+      if (t > 0.9 && S.head >= 1) w *= 1 + (t - 0.9) * 6;
+      w *= 1 + wob * 0.06 * Math.sin(S.t * 2.2 - t * 9);
+      const hw = Math.max(0.6, w / 2);
+      L.push([p.x + nx * hw, p.y + ny * hw]);
+      R.push([p.x - nx * hw, p.y - ny * hw]);
+      C.push([p.x + nx * hw * 0.45, p.y + ny * hw * 0.45]);
+    }
+    const f = n => n.toFixed(1);
+    let d = 'M' + L.map(q => f(q[0]) + ' ' + f(q[1])).join(' L ');
+    d += ' L ' + R.reverse().map(q => f(q[0]) + ' ' + f(q[1])).join(' L ') + ' Z';
+    sBody.setAttribute('d', d);
+    sSheen.setAttribute('d', 'M' + C.slice(1, -2).map(q => f(q[0]) + ' ' + f(q[1])).join(' L '));
+    sSheen.setAttribute('stroke-width', clamp(W * 0.12, 0.6, 1.6).toFixed(2));
+    if (S.head < 1) {
+      const hp = bez(p0, p1, p2, p3, S.head);
+      const hw = W * (0.5 + 0.5 * Math.pow(1 - S.head, 1.6));
+      sHead.setAttribute('cx', f(hp.x)); sHead.setAttribute('cy', f(hp.y + hw * 0.15));
+      sHead.setAttribute('r', (hw * 0.62 + 0.8).toFixed(2));
+    } else {
+      sHead.setAttribute('r', 0);
+    }
+  }
+
+  function drawGuide() {
+    const show = (S.hover || S.dragging || S.keyTilt) && !S.emptied && S.tilt < MAX_TILT - 6;
+    if (!show) return;
+    const R = 236;
+    const a = -S.tilt;
+    const a1 = (a - 4) * Math.PI / 180, a2 = (a - 28) * Math.PI / 180;
+    const x1 = PX + R * Math.cos(a1), y1 = PY + R * Math.sin(a1);
+    const x2 = PX + R * Math.cos(a2), y2 = PY + R * Math.sin(a2);
+    guide.setAttribute('d', `M${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 0 0 ${x2.toFixed(1)} ${y2.toFixed(1)}`);
+  }
+
+  // ---------- Loop ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    S.t += dt;
+
+    // Spoon follows the hand with a heavy, damped response
+    const k = S.emptied ? 1.6 : (S.dragging || S.keyTilt ? 8 : 3.0);
+    S.tilt += (S.tiltT - S.tilt) * ease(k, dt);
+
+    // Flow: only when tilted toward the target and there is wax left to pour.
+    // The last of the wax tapers off rather than cutting out.
+    const rem = 1 - S.out;
+    const taper = clamp(rem / 0.12, 0.2, 1);
+    const f = S.emptied ? 0 : clamp((S.tilt - FLOW_START) / (MAX_TILT - FLOW_START), 0, 1);
+    S.flowS += (f * taper - S.flowS) * ease(f * taper > S.flowS ? 1.5 : (S.emptied ? 3.5 : 2.8), dt);
+
+    if (f > 0.002 && !S.emptied) {
+      if (!S.active) { S.active = true; S.head = 0; S.tail = 0; }
+      S.tail = Math.max(0, S.tail - dt * 2);             // re-attach if it had begun to fall
+      S.head = Math.min(1, S.head + (0.45 + 0.8 * S.flowS) * dt);
+    } else if (S.active) {
+      S.tail = Math.min(S.head, S.tail + (0.35 + S.tail * 2.4) * dt);
+      if (S.head < 1) S.head = Math.min(1, S.head + 0.6 * dt);
+      if (S.head - S.tail < 0.004) {
+        if (S.landed) Sound.drip(S.emptied);               // last of the stream lands
+        S.active = false; S.head = 0; S.tail = 0; S.landed = false;
+      }
+    }
+
+    // Volume bookkeeping: what leaves the spoon is exactly what reaches the pool
+    if (S.active && S.tail === 0 && f > 0.002 && !S.emptied) {
+      S.out = Math.min(1, S.out + 0.15 * Math.pow(S.flowS, 1.3) * dt);
+    }
+    Sound.update(S.flowS, S.active && S.tail === 0 && S.head > 0.15 && S.flowS > 0.04 && !S.emptied);
+    const inflight = S.out - S.vol;
+    if (S.active && S.head >= 1) {
+      S.landed = true;
+      S.vol += inflight * ease(S.tail > 0 ? 3.5 : 2.2, dt);   // wax in the stream gathers into the pool
+    } else if (!S.active) {
+      S.vol += inflight * ease(6, dt);                      // a detached blob finishes landing
+    }
+
+    // Spoon runs dry: pour stops, spoon eases upright, last of the stream falls
+    if (S.out >= 0.999 && !S.emptied) {
+      S.out = 1; S.emptied = true;
+      S.keyTilt = false;
+      endDrag();
+    }
+    // Pool settles once the final wax has landed
+    if (S.emptied && !S.active && !S.done && S.out - S.vol < 0.01) {
+      S.vol = 1; S.done = true; S.doneT = 0;
+      SceneBridge.complete();
+    }
+    if (S.done) S.doneT += dt;
+
+    S.sDisp += (Math.sqrt(clamp(S.vol, 0, 1)) - S.sDisp) * ease(1.25, dt);
+    S.remDisp += ((1 - S.out) - S.remDisp) * ease(5, dt);
+
+    // ---- render ----
+    spoon.setAttribute('transform',
+      `rotate(${(-S.tilt).toFixed(2)} ${PX} ${PY}) translate(278.5 132) scale(${SC})`);
+    hit.setAttribute('aria-valuenow', Math.round(S.tilt));
+
+    // Wax inside the spoon: the level drops and the mass shrinks toward the bottom of the bowl
+    const r = clamp(S.remDisp, 0, 1);
+    const lean = S.tilt;
+    const wx = 0.22 + 0.78 * Math.pow(r, 0.55);
+    const wy = 0.14 + 0.86 * Math.pow(r, 0.8);
+    const sink = (1 - r) * 7;
+    const pull = -lean * (0.32 + (1 - r) * 0.35);        // thin wax runs further toward the lip
+    spoonWax.setAttribute('transform',
+      `translate(${pull.toFixed(2)} ${(Math.max(0, lean) * 0.06 + sink).toFixed(2)}) translate(90 82) scale(${wx.toFixed(3)} ${(wy * (1 - Math.max(0, lean) * 0.004)).toFixed(3)}) translate(-90 -82)`);
+    spoonWax.setAttribute('opacity', clamp(r / 0.05, 0, 1).toFixed(3));
+    residue.setAttribute('opacity', (clamp((0.3 - r) / 0.3, 0, 1) * 0.5).toFixed(3));
+
+    // Specular glints slide across the metal as the spoon turns
+    const gx = -0.18 + lean * 0.009;
+    rimSheen.setAttribute('x1', gx.toFixed(3));
+    rimSheen.setAttribute('x2', (gx + 1.1).toFixed(3));
+    const hx = -0.25 + lean * 0.014;
+    handleSheen.setAttribute('x1', hx.toFixed(3));
+    handleSheen.setAttribute('x2', (hx + 1).toFixed(3));
+
+    // Thick wax mounds up where the stream lands and only slowly slumps flat: no bounce
+    const landing = S.active && S.head >= 1 && S.tail === 0 ? S.flowS : 0;
+    const domeT = reduceMotion ? 0 : 0.1 * landing + (S.done ? 0 : 0.02 * S.sDisp);
+    S.dome += (domeT - S.dome) * ease(domeT > S.dome ? 1.2 : (S.done ? 0.55 : 0.8), dt);
+    const sx = S.sDisp * POOL_HX * (1 - S.dome * 0.55);
+    const sy = S.sDisp * POOL_HY * (1 + S.dome);
+    pool.setAttribute('transform',
+      `translate(${TX} ${TY}) scale(${sx.toFixed(4)} ${sy.toFixed(4)}) translate(-150 -104)`);
+    // highlight drifts and softens as the surface slowly levels out
+    const settle = S.done ? 1 - Math.exp(-S.doneT / 1.8) : 0;
+    poolHL.setAttribute('cx', (118 + 10 * settle).toFixed(1));
+    poolHL.setAttribute('rx', (34 + 6 * settle).toFixed(1));
+    poolHL.setAttribute('opacity', (0.85 - 0.3 * settle).toFixed(2));
+
+    // Target outline sharpens as the pool nears it, then recedes once it's filled
+    const near = clamp((S.sDisp - 0.55) / 0.45, 0, 1);
+    const tOp = S.done ? 0.6 + 0.3 * near - 0.6 * Math.min(1, S.doneT / 1.8) : 0.6 + 0.3 * near;
+    target.setAttribute('opacity', clamp(tOp, 0.18, 0.9).toFixed(2));
+
+    const W = (2.4 + 9 * S.flowS) * (S.tail > 0 ? Math.max(0.35, 1 - S.tail) : 1);
+    drawStream(W);
+    drawGuide();
+
+    requestAnimationFrame(frame);
+  }
+  setHot();
+  requestAnimationFrame(frame);
+
+  SceneBridge.register({
+    reset: () => resetBtn.click(),
+    focusTarget: () => hit,
+    anchor: () => { const r = target.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+  });
+})();
+</script>
+
+</body></html>

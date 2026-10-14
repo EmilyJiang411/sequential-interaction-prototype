@@ -1,0 +1,9 @@
+{
+  "name": "wax-seal-study",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Five-step wax seal interaction study (static HTML, no build).",
+  "scripts": {
+    "start": "npx --yes serve ."
+  }
+}

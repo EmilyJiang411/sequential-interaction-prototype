@@ -1,0 +1,450 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Align the Stamp</title>
+<style>
+  /* Layout: one centered stage, stamp hovering over wax; a single reset control in the corner. */
+  :root {
+    --bg: #e6e6e4;
+    --fg: #2b2b2b;
+    --btn-bg: #f4f4f3;
+    --btn-line: #bdbdbb;
+    --btn-ink: #3a3a3a;
+    --focus: #4a4a4a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1c1c; --fg: #dcdcdc; --btn-bg: #2a2a2a; --btn-line: #4a4a4a; --btn-ink: #d6d6d6; --focus: #cfcfcf;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1c1c; --fg: #dcdcdc; --btn-bg: #2a2a2a; --btn-line: #4a4a4a; --btn-ink: #d6d6d6; --focus: #cfcfcf;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg);
+    display: flex; align-items: center; justify-content: center;
+    padding-inline: 16px; box-sizing: border-box; overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  #stage {
+    width: min(100%, 82vh, 640px);
+    max-width: 100%;
+    aspect-ratio: 420 / 506;
+    display: block;
+    touch-action: none;
+  }
+  #stage.can-grab { cursor: grab; }
+  #stage.grabbing { cursor: grabbing; }
+  #knob .body, #knob .sheen { transition: fill 120ms ease, stroke 120ms ease; }
+  #knob.lit .body { fill: #d2d2d2; stroke: #f5f5f5; }
+  #knob.lit .sheen { fill: #ececec; }
+  #knob.lit .grip { stroke: #8a8a8a; }
+  #knob.lit { filter: url(#glow); }
+  #arrow { transition: opacity 250ms ease; }
+  #arrow.dim { opacity: 0.35; }
+  #arrow.gone { opacity: 0; }
+  #notchHalo { animation: halo 1.8s ease-in-out infinite; }
+  #notchHalo.done { animation: haloDone 900ms ease-out forwards; }
+  @keyframes halo { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }
+  @keyframes haloDone { 0% { opacity: 1; stroke-width: 9; } 100% { opacity: 0; stroke-width: 5; } }
+  #ready {
+    fill: var(--fg);
+    font-family: Georgia, 'Times New Roman', serif; font-style: italic;
+    font-size: 20px; letter-spacing: 1.5px;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 300ms ease, transform 300ms ease;
+  }
+  #ready.show { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    #notchHalo { animation: none; opacity: 0.6; }
+    #ready { transition: none; }
+  }
+  #marker { transition: fill 200ms ease; }
+  #marker.flash { fill: #ffffff; }
+  #reset {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    right: 16px;
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--btn-line);
+    background: var(--btn-bg); color: var(--btn-ink);
+    display: grid; place-items: center; cursor: pointer;
+    transition: transform 150ms ease, border-color 150ms ease;
+  }
+  #reset:hover { border-color: var(--btn-ink); }
+  #reset:active { transform: scale(0.94); }
+  #reset:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  #reset svg { width: 20px; height: 20px; }
+</style>
+
+<button id="reset" type="button" aria-label="Reset">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>
+  </svg>
+</button>
+
+<svg id="stage" viewBox="-10 -26 420 506" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stamp over a circle of wax">
+  <defs>
+    <path id="leaf" d="M0,0 C-10,-15 -40,-25 -40,-50 C-40,-70 -15,-76 0,-58 C15,-76 40,-70 40,-50 C40,-25 10,-15 0,0 Z"/>
+    <path id="textArc" d="M62,200 A138,138 0 0 1 338,200"/>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b"/>
+      <feFlood flood-color="#ffffff" flood-opacity="0.85"/>
+      <feComposite in2="b" operator="in" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <radialGradient id="waxShade" cx="45%" cy="40%" r="65%">
+      <stop offset="0" stop-color="#b4b4b4"/>
+      <stop offset="0.8" stop-color="#9c9c9c"/>
+      <stop offset="1" stop-color="#868686"/>
+    </radialGradient>
+  </defs>
+
+  <!-- WAX: circle underneath the stamp -->
+  <g id="wax">
+    <path id="waxBlob" fill="url(#waxShade)" stroke="#707070" stroke-width="2"/>
+    <circle cx="200" cy="232" r="176" fill="none" stroke="#a8a8a8" stroke-width="1.5" opacity="0.7"/>
+    <circle cx="200" cy="226" r="185" fill="#000" opacity="0.28" filter="url(#soft)"/>
+  </g>
+
+  <!-- GHOST: faint knob that demonstrates the turn -->
+  <g id="ghost" opacity="0" pointer-events="none">
+    <rect x="164" y="-8" width="72" height="42" rx="13" fill="#8a8a8a" stroke="#3a3a3a" stroke-width="2"/>
+  </g>
+
+  <!-- ROTOR: everything that turns -->
+  <g id="rotor">
+    <g id="knob">
+      <rect class="body" x="164" y="-8" width="72" height="42" rx="13" fill="#8a8a8a" stroke="#3a3a3a" stroke-width="2"/>
+      <rect class="sheen" x="170" y="-4" width="60" height="5" rx="2.5" fill="#a6a6a6"/>
+      <g class="grip" stroke="#4e4e4e" stroke-width="2.5" stroke-linecap="round">
+        <line x1="180" y1="4" x2="180" y2="17"/>
+        <line x1="190" y1="4" x2="190" y2="17"/>
+        <line x1="200" y1="4" x2="200" y2="17"/>
+        <line x1="210" y1="4" x2="210" y2="17"/>
+        <line x1="220" y1="4" x2="220" y2="17"/>
+      </g>
+    </g>
+
+    <!-- ARROW: short curved arrow beside the knob, pointing the way to turn -->
+    <g id="arrow" pointer-events="none">
+      <path id="arrowArc" d="" fill="none" stroke="#2e2e2e" stroke-width="3.5" stroke-linecap="round"/>
+      <path id="arrowHead" d="" fill="#2e2e2e"/>
+    </g>
+
+    <g id="ring">
+      <path fill-rule="evenodd" fill="#5c5c5c" stroke="#2e2e2e" stroke-width="2"
+            d="M200,20 A180,180 0 1 1 199.99,20 Z M200,40 A160,160 0 1 0 200.01,40 Z"/>
+      <g id="ridges" stroke="#4a4a4a" stroke-width="2" stroke-linecap="round"></g>
+      <circle cx="200" cy="200" r="170" fill="none" stroke="#7a7a7a" stroke-width="1.5"/>
+    </g>
+
+    <g id="design">
+      <circle cx="200" cy="200" r="159" fill="#ededed"/>
+      <circle cx="200" cy="200" r="150" fill="none" stroke="#9a9a9a" stroke-width="1.5"/>
+      <g id="clover" transform="translate(200,214)">
+        <path d="M0,0 C4,30 14,55 34,78" fill="none" stroke="#3a3a3a" stroke-width="7" stroke-linecap="round"/>
+        <g fill="#3d3d3d" stroke="#222" stroke-width="2">
+          <use href="#leaf" transform="rotate(-45)"/>
+          <use href="#leaf" transform="rotate(45)"/>
+          <use href="#leaf" transform="rotate(135)"/>
+          <use href="#leaf" transform="rotate(225)"/>
+        </g>
+        <g stroke="#8c8c8c" stroke-width="2" stroke-linecap="round">
+          <line x1="0" y1="0" x2="0" y2="-52" transform="rotate(-45)"/>
+          <line x1="0" y1="0" x2="0" y2="-52" transform="rotate(45)"/>
+          <line x1="0" y1="0" x2="0" y2="-52" transform="rotate(135)"/>
+          <line x1="0" y1="0" x2="0" y2="-52" transform="rotate(225)"/>
+        </g>
+        <circle r="5" fill="#2a2a2a"/>
+      </g>
+      <text font-family="Georgia, 'Times New Roman', serif" font-size="30" font-style="italic" fill="#2f2f2f" letter-spacing="3">
+        <textPath href="#textArc" startOffset="50%" text-anchor="middle">Emily</textPath>
+      </text>
+    </g>
+  </g>
+
+  <!-- NOTCH: fixed alignment cut at 6 o'clock -->
+  <g id="notch">
+    <path id="notchHalo" d="M188,381 L192,362 Q200,356 208,362 L212,381 Z" fill="none" stroke="#f4f4f4" stroke-width="5" stroke-linejoin="round" filter="url(#glow)"/>
+    <path d="M188,381 L192,362 Q200,356 208,362 L212,381 Z" fill="#1e1e1e" stroke="#111" stroke-width="1.5"/>
+  </g>
+
+  <!-- MARKER: turns with the stamp; lands in the notch when upright -->
+  <g id="markerRot">
+    <rect id="marker" x="198" y="363" width="4" height="15" rx="2" fill="#bcbcbc"/>
+  </g>
+
+  <!-- CONFIRMATION -->
+  <text id="ready" x="200" y="462" text-anchor="middle">Ready to stamp</text>
+</svg>
+
+<script>
+(() => {
+  const svg = document.getElementById('stage');
+  const rotor = document.getElementById('rotor');
+  const markerRot = document.getElementById('markerRot');
+  const marker = document.getElementById('marker');
+  const knob = document.getElementById('knob');
+  const ghost = document.getElementById('ghost');
+  const resetBtn = document.getElementById('reset');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const C = 200;                 // rotation center
+  const START = -58;             // starting tilt (degrees)
+  const SLOW_ZONE = 35;          // degrees from upright where the turn gets heavier
+  const SNAP_AT = 5;             // degrees from upright that trigger the snap
+  const DETENT = 15;             // spacing of the soft detent ticks
+
+  // Wax: a slightly irregular circle
+  (function buildWax() {
+    const pts = [], n = 72;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const r = 194 + Math.sin(a * 5 + 0.6) * 2.2 + Math.sin(a * 11 + 1.9) * 1.4 + Math.sin(a * 3) * 1.8;
+      pts.push([C + Math.cos(a) * r, 230 + Math.sin(a) * r]);
+    }
+    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+    }
+    document.getElementById('waxBlob').setAttribute('d', d + ' Z');
+  })();
+
+  // Ring ridges
+  (function buildRidges() {
+    const g = document.getElementById('ridges');
+    const ns = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i < 60; i++) {
+      const a = (i / 60) * Math.PI * 2;
+      const deg = a * 180 / Math.PI;
+      if (Math.abs(((deg + 540) % 360) - 180) < 9) continue; // keep clear around the marker
+      const l = document.createElementNS(ns, 'line');
+      l.setAttribute('x1', (C + Math.sin(a) * 173).toFixed(1));
+      l.setAttribute('y1', (C - Math.cos(a) * 173).toFixed(1));
+      l.setAttribute('x2', (C + Math.sin(a) * 178).toFixed(1));
+      l.setAttribute('y2', (C - Math.cos(a) * 178).toFixed(1));
+      g.appendChild(l);
+    }
+  })();
+
+  let theta = START;
+  let locked = false;
+  let dragging = false;
+  let lastPointerAngle = 0;
+  let pointerId = null;
+  let anim = null;
+
+  const norm = d => ((d % 360) + 540) % 360 - 180;
+
+  const arrow = document.getElementById('arrow');
+  const arrowArc = document.getElementById('arrowArc');
+  const arrowHead = document.getElementById('arrowHead');
+  const notchHalo = document.getElementById('notchHalo');
+  const ready = document.getElementById('ready');
+  let arrowDir = 0;
+
+  // point on a circle, angle in degrees clockwise from 12 o'clock
+  const P = (deg, r) => {
+    const a = deg * Math.PI / 180;
+    return [(C + Math.sin(a) * r).toFixed(1), (C - Math.cos(a) * r).toFixed(1)];
+  };
+  function setArrow(dir) {
+    if (dir === arrowDir) return;
+    arrowDir = dir;
+    const r = 188, a0 = 14 * dir, a1 = 32 * dir;
+    const [x0, y0] = P(a0, r), [x1, y1] = P(a1, r);
+    arrowArc.setAttribute('d', `M${x0},${y0} A${r},${r} 0 0 ${dir > 0 ? 1 : 0} ${x1},${y1}`);
+    const tip = P(41 * dir, r), b1 = P(31 * dir, r - 7), b2 = P(31 * dir, r + 7);
+    arrowHead.setAttribute('d', `M${tip[0]},${tip[1]} L${b1[0]},${b1[1]} L${b2[0]},${b2[1]} Z`);
+  }
+
+  function render() {
+    const t = `rotate(${theta.toFixed(3)} ${C} ${C})`;
+    rotor.setAttribute('transform', t);
+    markerRot.setAttribute('transform', t);
+    setArrow(norm(theta) <= 0 ? 1 : -1);
+  }
+
+  function toSvg(e) {
+    const p = svg.createSVGPoint();
+    p.x = e.clientX; p.y = e.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function angleOf(pt) { return Math.atan2(pt.x - C, -(pt.y - C)) * 180 / Math.PI; }
+  function onGrip(pt) {
+    const r = Math.hypot(pt.x - C, pt.y - C);
+    if (r >= 152 && r <= 196) return true;                      // ring band
+    // knob, in rotor space
+    const a = (-theta) * Math.PI / 180;
+    const dx = pt.x - C, dy = pt.y - C;
+    const lx = dx * Math.cos(a) - dy * Math.sin(a) + C;
+    const ly = dx * Math.sin(a) + dy * Math.cos(a) + C;
+    return lx >= 156 && lx <= 244 && ly >= -18 && ly <= 42;
+  }
+
+  // ---- sound ----
+  let ctx = null;
+  function audio() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; } }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function noise(dur, freq, gain, type = 'bandpass') {
+    const a = audio(); if (!a) return;
+    const len = Math.max(1, Math.floor(a.sampleRate * dur));
+    const buf = a.createBuffer(1, len, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const f = a.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = 1.2;
+    const g = a.createGain(); g.gain.value = gain;
+    src.connect(f).connect(g).connect(a.destination);
+    src.start();
+  }
+  function tick() { noise(0.012, 5200, 0.06, 'highpass'); }
+  function click() {
+    const a = audio(); if (!a) return;
+    noise(0.02, 2600, 0.35);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(220, a.currentTime);
+    o.frequency.exponentialRampToValueAtTime(90, a.currentTime + 0.08);
+    g.gain.setValueAtTime(0.0001, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.28, a.currentTime + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.1);
+    o.connect(g).connect(a.destination);
+    o.start(); o.stop(a.currentTime + 0.12);
+  }
+
+  // ---- animation helpers ----
+  function animateTo(target, ms, ease, done) {
+    cancelAnimationFrame(anim);
+    const from = theta, t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      theta = from + (target - from) * ease(k);
+      render();
+      if (k < 1) anim = requestAnimationFrame(step); else { theta = target; render(); done && done(); }
+    };
+    anim = requestAnimationFrame(step);
+  }
+  const easeOutBack = k => { const c = 2.2; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+  const easeOut = k => 1 - Math.pow(1 - k, 3);
+
+  function snap() {
+    locked = true;
+    const target = theta - norm(theta);
+    animateTo(target, reduceMotion ? 1 : 150, easeOutBack, () => {
+      theta = 0; render();
+    });
+    click();
+    try { navigator.vibrate && navigator.vibrate(14); } catch (e) {}
+    marker.classList.add('flash');
+    setTimeout(() => marker.classList.remove('flash'), 260);
+    notchHalo.classList.add('done');
+    arrow.classList.add('gone');
+    setTimeout(() => ready.classList.add('show'), reduceMotion ? 0 : 160);
+    endDrag();
+  }
+
+  // ---- ghost hint ----
+  let ghostTimer = null, ghostAnim = null;
+  function stopGhost() {
+    clearTimeout(ghostTimer); cancelAnimationFrame(ghostAnim);
+    ghost.setAttribute('opacity', '0');
+  }
+  function playGhost(times) {
+    stopGhost();
+    if (locked) return;
+    const from = theta, to = theta - norm(theta);
+    const run = (left) => {
+      const t0 = performance.now(), ms = reduceMotion ? 900 : 1300;
+      const step = now => {
+        const k = Math.min(1, (now - t0) / ms);
+        const a = reduceMotion ? from : from + (to - from) * easeOut(k);
+        const op = Math.sin(k * Math.PI) * 0.42;
+        ghost.setAttribute('transform', `rotate(${a.toFixed(2)} ${C} ${C})`);
+        ghost.setAttribute('opacity', op.toFixed(3));
+        if (k < 1) ghostAnim = requestAnimationFrame(step);
+        else { ghost.setAttribute('opacity', '0'); if (left > 1) ghostTimer = setTimeout(() => run(left - 1), 700); }
+      };
+      ghostAnim = requestAnimationFrame(step);
+    };
+    ghostTimer = setTimeout(() => run(times), 650);
+  }
+
+  // ---- pointer ----
+  function endDrag() {
+    dragging = false;
+    knob.classList.remove('lit');
+    arrow.classList.remove('dim');
+    svg.classList.remove('grabbing');
+    if (pointerId !== null) { try { svg.releasePointerCapture(pointerId); } catch (e) {} }
+    pointerId = null;
+  }
+
+  svg.addEventListener('pointerdown', e => {
+    if (locked) return;
+    const pt = toSvg(e);
+    if (!onGrip(pt)) return;
+    e.preventDefault();
+    audio();
+    stopGhost();
+    cancelAnimationFrame(anim);
+    dragging = true;
+    pointerId = e.pointerId;
+    svg.setPointerCapture(e.pointerId);
+    lastPointerAngle = angleOf(pt);
+    knob.classList.add('lit');
+    arrow.classList.add('dim');
+    svg.classList.add('grabbing');
+  });
+
+  svg.addEventListener('pointermove', e => {
+    const pt = toSvg(e);
+    if (!dragging) {
+      svg.classList.toggle('can-grab', !locked && onGrip(pt));
+      return;
+    }
+    const a = angleOf(pt);
+    let delta = norm(a - lastPointerAngle);
+    lastPointerAngle = a;
+    const dist = Math.abs(norm(theta));
+    // resistance builds as the stamp nears upright
+    const factor = dist < SLOW_ZONE ? 0.3 + 0.7 * Math.pow(dist / SLOW_ZONE, 1.5) : 1;
+    const before = theta;
+    theta += delta * factor;
+    if (Math.floor(before / DETENT) !== Math.floor(theta / DETENT)) tick();
+    render();
+    if (Math.abs(norm(theta)) <= SNAP_AT) snap();
+  });
+
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t =>
+    svg.addEventListener(t, () => { if (dragging) endDrag(); })
+  );
+  svg.addEventListener('pointerleave', () => { if (!dragging) svg.classList.remove('can-grab'); });
+
+  resetBtn.addEventListener('click', () => {
+    endDrag();
+    stopGhost();
+    locked = false;
+    ready.classList.remove('show');
+    notchHalo.classList.remove('done');
+    arrow.classList.remove('gone');
+    animateTo(START, reduceMotion ? 1 : 420, easeOut, () => playGhost(1));
+  });
+
+  render();
+  playGhost(2);
+})();
+</script>
+
+</body></html>

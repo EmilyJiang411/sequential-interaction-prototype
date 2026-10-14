@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Sealing a personal letter: fold the flap, pour the wax, align, press and lift the stamp.">
+  <title>Sealing a Letter</title>
+  <link rel="stylesheet" href="css/sequence.css">
+</head>
+<body>
+  <main class="sequence" aria-label="Sealing a letter, five steps">
+    <!-- One scene per study, in order. Only the current scene is visible and interactive. -->
+    <iframe class="scene" data-src="scenes/01-fold-the-flap.html"   title="Step 1 of 5: fold the envelope flap closed"></iframe>
+    <iframe class="scene" data-src="scenes/02-pour-the-wax.html"     title="Step 2 of 5: pour the wax onto the seam"></iframe>
+    <iframe class="scene" data-src="scenes/03-align-the-stamp.html"  title="Step 3 of 5: turn the stamp upright"></iframe>
+    <iframe class="scene" data-src="scenes/04-press-the-stamp.html"  title="Step 4 of 5: press the stamp into the wax"></iframe>
+    <iframe class="scene" data-src="scenes/05-lift-the-stamp.html"   title="Step 5 of 5: lift the stamp to reveal the seal"></iframe>
+  </main>
+
+  <button class="restart" id="restart" type="button" aria-label="Start over">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v3.6h3.6"/>
+    </svg>
+  </button>
+
+  <script src="js/sequence.js"></script>
+</body>
+</html>
