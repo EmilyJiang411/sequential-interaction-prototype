@@ -147,7 +147,7 @@ svg.scene { width: 100%; height: 100%; display: block; overflow: visible; touch-
 
   // Geometry (scene units)
   const START = 12;      // rests just above the wax
-  const FULL = 30;       // seated depth
+  let FULL = 30;         // seated depth (control panel: 18 to wax contact + press depth)
   const BASE_BOTTOM = 296;
   const CONTACT_AT = 314; // base bottom where wax begins to yield
 
@@ -364,6 +364,8 @@ svg.scene { width: 100%; height: 100%; display: block; overflow: visible; touch-
   SceneBridge.register({
     reset: () => $('reset').click(),
     focusTarget: () => stamp,
+    wax: '#wax-pool, #wax-lip',
+    settings: v => { if (Number.isFinite(v.pressDepth)) FULL = (CONTACT_AT - BASE_BOTTOM) + v.pressDepth; },
     anchor: () => { const r = waxInner.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
   });
 })();

@@ -618,6 +618,7 @@
   SceneBridge.register({
     reset: () => resetBtn.click(),
     focusTarget: () => hit,
+    wax: '#spoon-wax, #spoon-residue, #stream, #pool',
     // the wax target sits on the envelope's flap tip; w: the envelope's on-screen width (400 × 0.9 scene units)
     anchor: () => { const r = target.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: 360 * svg.getScreenCTM().a }; }
   });

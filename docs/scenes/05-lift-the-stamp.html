@@ -316,8 +316,8 @@
   const cast = $('cast'), castStd = $('castBlurStd'), matte = $('matteCover'), gloss = $('gloss');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const T = 92;      // pull needed to break the tack
-  const S = 9;       // max creep while stuck
+  let T = 92;        // pull needed to break the tack (control panel: release threshold)
+  let S = 9;         // max creep while stuck (control panel: lift resistance)
   const MAX = 150;   // highest lift
   const REST = 122;  // where a freed stamp hovers
 
@@ -513,6 +513,11 @@
   SceneBridge.register({
     reset: () => $('reset').click(),
     focusTarget: () => hit,
+    wax: '#seal, #wax, #well, #matte, #meniscusFill',
+    settings: v => {
+      if (Number.isFinite(v.releaseThreshold)) T = v.releaseThreshold;
+      if (Number.isFinite(v.liftResistance)) S = 18 * (1 - v.liftResistance / 100);   // 50% → 9, the study's value
+    },
     // w: the envelope's on-screen width (400 × 1.2 scene units)
     anchor: () => { const m = svg.getScreenCTM(); return { x: m.a * 200 + m.c * 470 + m.e, y: m.b * 200 + m.d * 470 + m.f, w: 480 * m.a }; }
   });

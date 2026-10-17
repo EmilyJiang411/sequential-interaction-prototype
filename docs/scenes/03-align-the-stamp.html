@@ -462,6 +462,7 @@
     activate: () => playGhost(2),          // the ghost demo now plays when this step begins
     reset: () => resetBtn.click(),
     focusTarget: () => knob,
+    wax: '#wax, #waxShade',
     anchor: () => { const m = svg.getScreenCTM(); return { x: m.a * 200 + m.c * 200 + m.e, y: m.b * 200 + m.d * 200 + m.f }; }
   });
 })();

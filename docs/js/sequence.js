@@ -22,7 +22,9 @@
   // Fold (paper snap), Pour (pool settles), Align ("Ready to stamp"), Press (thud).
   const HOLD = [650, 1100, 1500, 900];
   const FADE = reduce ? 300 : 800;
-  const EASE = 'cubic-bezier(.45, 0, .25, 1)';
+  // Easing of the hand-offs comes from the control panel (js/settings.js);
+  // the default, Ease In-Out, is cubic-bezier(.45, 0, .25, 1).
+  const ease = () => (window.WaxSettings ? WaxSettings.easingCss() : 'cubic-bezier(.45, 0, .25, 1)');
 
   let current = 0;
   let run = 0;              // bumped on every restart; stale async work checks it and stops
@@ -48,6 +50,7 @@
     const i = indexOf(e.source);
     if (i < 0) return;
     if (d.type === 'ready') {
+      sendSettings(i);
       readyWaiters[i].splice(0).forEach(resolve => resolve());
     } else if (d.type === 'complete') {
       onComplete(i);
@@ -60,6 +63,12 @@
   });
   window.addEventListener('keydown', () => { lastInput = 'key'; }, true);
   window.addEventListener('pointerdown', () => { lastInput = 'pointer'; }, true);
+
+  // Control-panel values go to every scene as it loads and whenever they change.
+  function sendSettings(i) {
+    if (window.WaxSettings) send(i, { type: 'settings', values: WaxSettings.get() });
+  }
+  if (window.WaxSettings) WaxSettings.onChange(() => frames.forEach((_, i) => sendSettings(i)));
 
   // (Re)load a scene from scratch; resolves when the study has registered.
   function load(i) {
@@ -149,11 +158,11 @@
       B.animate([
         { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(${s})` },
         { opacity: 1, transform: 'translate(0, 0) scale(1)' }
-      ], { duration: FADE, easing: EASE, fill: 'forwards' }),
+      ], { duration: FADE, easing: ease(), fill: 'forwards' }),
       A.animate([
         { transform: 'translate(0, 0) scale(1)' },
         { transform: `translate(${-dx}px, ${-dy}px) scale(${1 / s})` }
-      ], { duration: FADE, easing: EASE, fill: 'forwards' })
+      ], { duration: FADE, easing: ease(), fill: 'forwards' })
     ];
     await Promise.all(anims.map(a => a.finished.catch(() => {})));
     transitioning = false;
@@ -197,6 +206,37 @@
   }
 
   restartBtn.addEventListener('click', restart);
+
+  // ---------- replay from a step (control panel) ----------
+  // Starts the sequence again at step i, fresh, keeping the panel's settings.
+  // The steps after it are refreshed too, so the rest of the run stays linear.
+  async function replayFrom(i) {
+    const token = ++run;
+    clearTimeout(holdTimer);
+
+    // The step on screen, not mid hand-off: its own reset replays it in place.
+    if (i === current && !transitioning) {
+      send(i, { type: 'reset' });
+      frames.forEach((_, k) => { if (k > i) load(k); });
+      activate(i);
+      return;
+    }
+
+    transitioning = false;
+    await load(i);
+    if (token !== run) return;
+    show(i);
+    frames[i].animate([{ opacity: 0 }, { opacity: 1 }], { duration: reduce ? 150 : 400, easing: 'ease-out' });
+    frames.forEach((_, k) => { if (k !== i) load(k); });
+    activate(i);
+  }
+
+  window.WaxSequence = {
+    steps: frames.map(f => f.getAttribute('title')),
+    current: () => current,
+    restart,
+    replayFrom
+  };
 
   // ---------- start: the open envelope ----------
   frames.forEach((_, i) => { setInert(frames[i], true); });

@@ -15,6 +15,22 @@ One continuous, linear interaction: sealing a personal letter with wax. It start
 
 It ends at rest on the sealed envelope. The round button (bottom-right) starts over from the open envelope at any time.
 
+## Control panel
+
+A collapsible panel on the left (the round sliders button, top-left) tunes the seal while you play. When it is open, the scenes lay out to its right, so it never covers the envelope, wax or stamp. On narrow screens it starts collapsed.
+
+| Control | Acts on | Range | Saved default |
+|---|---|---|---|
+| Wax color | the wax in Pour, Align, Press and Lift | any color | `#727272` (the studies' grey) |
+| Stamp press depth | Press the Stamp: how far the stamp sinks into the wax | 2–14 u | 12 u |
+| Lift resistance | Lift the Stamp: how little the stuck stamp follows the pointer before it releases | 0–100% | 50% (follows up to 9 u) |
+| Release threshold | Lift the Stamp: upward drag needed to separate the stamp from the wax | 30–180 u | 92 u |
+| Transition easing | the glide between steps and the restart glide (Linear, Ease In, Ease Out, Ease In-Out, Spring/Bounce) | — | Ease In-Out |
+
+*u* is a scene unit: the Press stamp's base is 120 u wide, the Lift stamp's handle about 165 u tall. Dragging always follows the pointer directly; easing applies only to animated transitions.
+
+Changes apply live and are kept in your browser, so **Replay from** (any step) and reloading keep them. **Restore defaults** returns to the saved defaults in `docs/js/settings.js`. **Copy settings** copies every control's name and value, with an instruction to make them the new saved defaults.
+
 ## Structure
 
 ```
@@ -22,7 +38,10 @@ docs/                     the published site (GitHub Pages serves this folder)
   index.html              sequence shell: five stacked scenes + restart button
   .nojekyll               serve files as-is
   css/sequence.css        shell layout, scene visibility, restart button
-  js/sequence.js          sequence controller: gating, hold times, anchored crossfade, restart
+  css/panel.css           control panel layout
+  js/settings.js          saved defaults and current values of the panel's controls
+  js/sequence.js          sequence controller: gating, hold times, anchored crossfade, restart, replay
+  js/panel.js             control panel: controls, replay, restore defaults, copy settings
   scenes/
     scene-bridge.js       messaging between each scene and the controller
     01-fold-the-flap.html … 05-lift-the-stamp.html   the studies, adapted
@@ -37,6 +56,7 @@ Everything in `docs/` is plain HTML, CSS and JavaScript with relative paths. The
 - Pour the Wax's text label and web font removed
 - in Pour the Wax only: its envelope drawing replaced with the closed envelope from Fold the Flap (the same art Lift the Stamp uses), with the flap tip on the wax target, so the envelope you close is the one you pour onto
 - a `SceneBridge.complete()` call at the study's success moment
+- the control panel's hooks: which parts are wax (for the wax color), and in Press and Lift the press depth, lift resistance and release threshold, which replace the study's fixed values (its defaults are the study's own)
 - a small `SceneBridge.register({...})` block at the end of the script
 - in Align the Stamp only: arrow-key turning, so the whole sequence works by keyboard. It uses the drag's own resistance, ticks and snap.
 
