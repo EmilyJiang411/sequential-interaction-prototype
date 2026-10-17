@@ -10,7 +10,15 @@
  */
 (() => {
   const DEFAULTS = {
-    waxColor: '#727272',       // the studies' wax grey
+    // Colors: each starts at the grey the studies draw that part in, so the
+    // prototype looks exactly as designed until a color is changed.
+    waxColor: '#727272',
+    envelopeColor: '#c2c2c2',
+    stampHandleColor: '#8a8a8a',
+    stampMetalColor: '#959595',
+    spoonHandleColor: '#8a8a8a',
+    spoonBowlColor: '#9a9a9a',
+    backgroundColor: '#e9e9e9',
     pressDepth: 12,            // scene units the stamp sinks into the wax (Press the Stamp)
     liftResistance: 50,        // % — 50% lets the stuck stamp creep up to 9 units (Lift the Stamp)
     releaseThreshold: 92,      // scene units of upward drag to break the wax's grip (Lift the Stamp)
@@ -19,7 +27,13 @@
 
   // Each control: what it is called, where it acts, its range and unit.
   const CONTROLS = {
-    waxColor:         { label: 'Wax color', component: 'Wax (Pour the Wax, Align the Stamp, Press the Stamp, Lift the Stamp)' },
+    waxColor:         { label: 'Wax', color: true, component: 'spoon wax, pouring stream and pool (Pour), wax disc (Align), wax pool (Press), finished seal (Lift)' },
+    envelopeColor:    { label: 'Envelope', color: true, component: 'envelope (Fold, Pour, Lift) and the surface under the wax (Press)' },
+    stampHandleColor: { label: 'Stamp handle', color: true, component: 'stamp handle and knob (Align, Press, Lift)' },
+    stampMetalColor:  { label: 'Stamp metal base and shaft', color: true, component: 'stamp ring (Align), base, shaft and collar (Press), base and stem (Lift)' },
+    spoonHandleColor: { label: 'Spoon handle', color: true, component: 'knurled spoon handle (Pour)' },
+    spoonBowlColor:   { label: 'Spoon bowl', color: true, component: 'spoon bowl and neck (Pour)' },
+    backgroundColor:  { label: 'Background', color: true, component: 'page background (all scenes)' },
     pressDepth:       { label: 'Stamp press depth', component: 'Press the Stamp', min: 2, max: 14, step: 1, unit: 'u' },
     liftResistance:   { label: 'Lift resistance', component: 'Lift the Stamp', min: 0, max: 100, step: 5, unit: '%' },
     releaseThreshold: { label: 'Release threshold', component: 'Lift the Stamp', min: 30, max: 180, step: 2, unit: 'u' },
@@ -55,13 +69,16 @@
   // 0% follows up to 18 units, 50% up to 9 (the study's value), 100% not at all.
   const creepFor = resistance => 18 * (1 - resistance / 100);
 
+  const COLOR_KEYS = Object.keys(CONTROLS).filter(k => CONTROLS[k].color);
   const KEY = 'waxSeal.settings.v1';
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
   function sanitize(v) {
     const out = Object.assign({}, DEFAULTS);
     if (!v || typeof v !== 'object') return out;
-    if (typeof v.waxColor === 'string' && /^#[0-9a-f]{6}$/i.test(v.waxColor)) out.waxColor = v.waxColor.toLowerCase();
+    for (const k of COLOR_KEYS) {
+      if (typeof v[k] === 'string' && /^#[0-9a-f]{6}$/i.test(v[k])) out[k] = v[k].toLowerCase();
+    }
     for (const k of ['pressDepth', 'liftResistance', 'releaseThreshold']) {
       const n = Number(v[k]);
       if (Number.isFinite(n)) out[k] = clamp(n, CONTROLS[k].min, CONTROLS[k].max);
@@ -83,7 +100,7 @@
 
   window.WaxSettings = {
     DEFAULTS: Object.freeze(Object.assign({}, DEFAULTS)),
-    CONTROLS, EASINGS, creepFor,
+    CONTROLS, EASINGS, COLOR_KEYS, creepFor,
     get, set,
     restore() { set(DEFAULTS); },
     onChange(fn) { listeners.push(fn); },

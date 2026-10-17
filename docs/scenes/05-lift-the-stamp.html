@@ -513,7 +513,13 @@
   SceneBridge.register({
     reset: () => $('reset').click(),
     focusTarget: () => hit,
-    wax: '#seal, #wax, #well, #matte, #meniscusFill',
+    colors: [
+      ['envelope', '#envelope', '#c2c2c2'],
+      ['wax', '#seal, #wax, #well, #matte, #meniscusFill', '#727272'],
+      ['stampHandle', '#handle, #handleShade', '#7a7a7a'],
+      ['stampMetal', '#stem, #base, #metal', '#959595']
+    ],
+    background: '--page',
     settings: v => {
       if (Number.isFinite(v.releaseThreshold)) T = v.releaseThreshold;
       if (Number.isFinite(v.liftResistance)) S = 18 * (1 - v.liftResistance / 100);   // 50% → 9, the study's value

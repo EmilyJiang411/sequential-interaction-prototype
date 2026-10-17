@@ -171,6 +171,7 @@
   const AX = 172.8, BX = 237.6, FY = 125, TX = 206.3, TIP = 23.1;
   // Corner fold angle φ: 180 = lying flat on the flap, 0 = unfolded flush with the flap
   const PHI_REST = 150, PHI_HOT = 124;
+  const ENV_TONE = '#c2c2c2';              // the envelope's main tone (control panel: envelope color)
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const T = d => reduce ? d * 0.4 : d;
@@ -212,12 +213,12 @@
     if (c < 0) {
       // underside showing: light paper, a touch darker when standing up
       const top = Math.round(250 - 26 * s), base = Math.round(238 - 22 * s);
-      ug0.setAttribute('stop-color', `rgb(${base},${base},${base})`);
-      ug1.setAttribute('stop-color', `rgb(${top},${top},${top})`);
+      ug0.setAttribute('stop-color', SceneBridge.paint('envelope', `rgb(${base},${base},${base})`, ENV_TONE));
+      ug1.setAttribute('stop-color', SceneBridge.paint('envelope', `rgb(${top},${top},${top})`, ENV_TONE));
       cornerFill.setAttribute('fill', 'url(#underGrad)');
     } else {
       const g = Math.round(228 - 34 * s);
-      cornerFill.setAttribute('fill', `rgb(${g},${g},${g})`);
+      cornerFill.setAttribute('fill', SceneBridge.paint('envelope', `rgb(${g},${g},${g})`, ENV_TONE));
     }
     foldLine.setAttribute('opacity', clamp(phi / 40, 0, 1).toFixed(3));
     // match the flap's 3px outline when the corner lies flush, so the edge is one continuous line
@@ -413,6 +414,8 @@
   SceneBridge.register({
     reset: () => reset.click(),
     focusTarget: () => hit,
+    colors: [['envelope', '.env > svg, .flap svg', ENV_TONE]],
+    background: '--bg',
     // tip of the closed flap, where the wax will land
     // w: the envelope's on-screen width, so the hand-off can keep the envelope the same size
     anchor: () => { const r = stage.getBoundingClientRect(); return { x: r.left + 206.3 * scale, y: r.top + 308.1 * scale, w: 400 * scale }; }

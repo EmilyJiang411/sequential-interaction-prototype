@@ -21,11 +21,19 @@ A collapsible panel on the left (the round sliders button, top-left) tunes the s
 
 | Control | Acts on | Range | Saved default |
 |---|---|---|---|
-| Wax color | the wax in Pour, Align, Press and Lift | any color | `#727272` (the studies' grey) |
+| Wax | spoon wax, pouring stream and pool (Pour), wax disc (Align), wax pool (Press), finished seal (Lift) | any color | `#727272` |
+| Envelope | envelope (Fold, Pour, Lift) and the surface under the wax (Press) | any color | `#c2c2c2` |
+| Stamp handle | handle and knob (Align, Press, Lift) | any color | `#8a8a8a` |
+| Stamp metal base and shaft | ring (Align), base, shaft and collar (Press), base and stem (Lift) | any color | `#959595` |
+| Spoon handle | knurled handle (Pour) | any color | `#8a8a8a` |
+| Spoon bowl | bowl and neck (Pour) | any color | `#9a9a9a` |
+| Background | page background (all scenes) | any color | `#e9e9e9` |
 | Stamp press depth | Press the Stamp: how far the stamp sinks into the wax | 2–14 u | 12 u |
 | Lift resistance | Lift the Stamp: how little the stuck stamp follows the pointer before it releases | 0–100% | 50% (follows up to 9 u) |
 | Release threshold | Lift the Stamp: upward drag needed to separate the stamp from the wax | 30–180 u | 92 u |
 | Transition easing | the glide between steps and the restart glide (Linear, Ease In, Ease Out, Ease In-Out, Spring/Bounce) | — | Ease In-Out |
+
+Each color default is the grey the studies draw that part in, so nothing changes until a color is adjusted. Recoloring keeps every highlight, shadow, gradient, texture and seal detail: each shade keeps its place from light to dark and takes the new hue. For a saturated color, each scene's main tone of that part lands on the chosen color, so the wax in the spoon, the pouring stream and the finished seal match even though the studies drew them in different greys.
 
 *u* is a scene unit: the Press stamp's base is 120 u wide, the Lift stamp's handle about 165 u tall. Dragging always follows the pointer directly; easing applies only to animated transitions.
 

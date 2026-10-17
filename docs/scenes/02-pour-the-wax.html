@@ -618,7 +618,13 @@
   SceneBridge.register({
     reset: () => resetBtn.click(),
     focusTarget: () => hit,
-    wax: '#spoon-wax, #spoon-residue, #stream, #pool',
+    colors: [
+      ['envelope', '#envelope', '#c2c2c2'],
+      ['spoonBowl', '#spoon-bowl, #spoon-neck, #metal, #bowl-hollow', '#9a9a9a'],
+      ['spoonHandle', '#spoon-handle, #knurl', '#8a8a8a'],
+      ['wax', '#spoon-wax, #spoon-residue, #stream, #pool', '#cbcbcb']
+    ],
+    background: '--bg',
     // the wax target sits on the envelope's flap tip; w: the envelope's on-screen width (400 × 0.9 scene units)
     anchor: () => { const r = target.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: 360 * svg.getScreenCTM().a }; }
   });

@@ -27,9 +27,9 @@
   #stage.can-grab { cursor: grab; }
   #stage.grabbing { cursor: grabbing; }
   #knob .body, #knob .sheen { transition: fill 120ms ease, stroke 120ms ease; }
-  #knob.lit .body, #knob:focus-visible .body { fill: #d2d2d2; stroke: #f5f5f5; }
-  #knob.lit .sheen, #knob:focus-visible .sheen { fill: #ececec; }
-  #knob.lit .grip, #knob:focus-visible .grip { stroke: #8a8a8a; }
+  #knob.lit .body, #knob:focus-visible .body { fill: var(--knob-lit-body, #d2d2d2); stroke: var(--knob-lit-edge, #f5f5f5); }
+  #knob.lit .sheen, #knob:focus-visible .sheen { fill: var(--knob-lit-sheen, #ececec); }
+  #knob.lit .grip, #knob:focus-visible .grip { stroke: var(--knob-lit-grip, #8a8a8a); }
   #knob.lit, #knob:focus-visible { filter: url(#glow); }
   #knob { outline: none; }
   #arrow { transition: opacity 250ms ease; }
@@ -462,7 +462,18 @@
     activate: () => playGhost(2),          // the ghost demo now plays when this step begins
     reset: () => resetBtn.click(),
     focusTarget: () => knob,
-    wax: '#wax, #waxShade',
+    colors: [
+      ['wax', '#wax, #waxShade', '#9c9c9c'],
+      ['stampHandle', '#knob, #ghost', '#8a8a8a'],
+      ['stampMetal', '#ring', '#5c5c5c']
+    ],
+    cssColors: [
+      ['stampHandle', '--knob-lit-body', '#d2d2d2', '#8a8a8a'],
+      ['stampHandle', '--knob-lit-edge', '#f5f5f5', '#8a8a8a'],
+      ['stampHandle', '--knob-lit-sheen', '#ececec', '#8a8a8a'],
+      ['stampHandle', '--knob-lit-grip', '#8a8a8a', '#8a8a8a']
+    ],
+    background: '--bg',
     anchor: () => { const m = svg.getScreenCTM(); return { x: m.a * 200 + m.c * 200 + m.e, y: m.b * 200 + m.d * 200 + m.f }; }
   });
 })();

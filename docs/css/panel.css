@@ -90,8 +90,14 @@ body.panel-open .panel-toggle { display: none; }
 .ctl input[type="range"] { width: 100%; margin: 8px 0 2px; accent-color: var(--panel-ink); }
 .ctl input[type="range"]:focus-visible { outline: 2px solid var(--panel-ink); outline-offset: 2px; border-radius: 4px; }
 
-.color-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.color-list { display: grid; gap: 2px; margin-top: 6px; }
+.color-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.color-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.color-name label { font-weight: 500; }
+.color-name .hint { margin: 0; font-size: 11px; line-height: 1.3; }
+.color-row .val { font-size: 11px; color: var(--panel-muted); font-variant-numeric: tabular-nums; }
 .color-row input[type="color"] {
+  flex: none;
   width: 44px; height: 32px; padding: 2px;
   border: 1px solid var(--panel-line); border-radius: 8px; background: var(--panel-field); cursor: pointer;
 }

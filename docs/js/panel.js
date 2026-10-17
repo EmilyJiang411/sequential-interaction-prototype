@@ -45,8 +45,20 @@
     r.input.addEventListener('input', () => S.set({ [key]: Number(r.input.value) }));
   }
 
-  const wax = $('c-wax'), waxVal = $('v-wax');
-  wax.addEventListener('input', () => S.set({ waxColor: wax.value }));
+  // One labeled picker per part, in the order of S.COLOR_KEYS.
+  const colorList = $('c-colors'), pickers = {};
+  for (const key of S.COLOR_KEYS) {
+    const id = 'c-' + key;
+    const row = document.createElement('div');
+    row.className = 'color-row';
+    row.innerHTML = `<input type="color" id="${id}" aria-describedby="${id}-where">
+      <div class="color-name"><label for="${id}">${C[key].label}</label><span class="hint" id="${id}-where">${C[key].component}</span></div>
+      <span class="val" aria-hidden="true"></span>`;
+    const input = row.querySelector('input');
+    input.addEventListener('input', () => S.set({ [key]: input.value }));
+    pickers[key] = { input, val: row.querySelector('.val') };
+    colorList.append(row);
+  }
 
   const easingList = $('c-easing');
   for (const [key, e] of Object.entries(S.EASINGS)) {
@@ -78,8 +90,10 @@
   }
 
   function render(v) {
-    wax.value = v.waxColor;
-    waxVal.textContent = v.waxColor;
+    for (const [key, p] of Object.entries(pickers)) {
+      p.input.value = v[key];
+      p.val.textContent = v[key];
+    }
     for (const [key, r] of Object.entries(ranges)) {
       r.input.value = v[key];
       r.out.textContent = fmt(v[key], C[key].unit);
@@ -119,7 +133,7 @@
     const lines = [
       'Wax seal prototype — control panel settings',
       '',
-      `${C.waxColor.label} — ${C.waxColor.component}: ${v.waxColor}`,
+      ...S.COLOR_KEYS.map(k => `${C[k].label} color — ${C[k].component}: ${v[k]}`),
       `${C.pressDepth.label} — ${C.pressDepth.component}: ${v.pressDepth} u (scene units the stamp sinks into the wax; range ${C.pressDepth.min}–${C.pressDepth.max} u)`,
       `${C.liftResistance.label} — ${C.liftResistance.component}: ${v.liftResistance}% (stuck stamp follows the pointer up to ${(Math.round(S.creepFor(v.liftResistance) * 10) / 10)} u before release; range ${C.liftResistance.min}–${C.liftResistance.max}%)`,
       `${C.releaseThreshold.label} — ${C.releaseThreshold.component}: ${v.releaseThreshold} u (upward drag to separate the stamp from the wax; range ${C.releaseThreshold.min}–${C.releaseThreshold.max} u)`,

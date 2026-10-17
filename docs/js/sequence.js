@@ -68,7 +68,12 @@
   function sendSettings(i) {
     if (window.WaxSettings) send(i, { type: 'settings', values: WaxSettings.get() });
   }
-  if (window.WaxSettings) WaxSettings.onChange(() => frames.forEach((_, i) => sendSettings(i)));
+  // The shell's own background (behind and between the scenes) follows the panel too.
+  function applyShell(v) { document.documentElement.style.setProperty('--bg', v.backgroundColor); }
+  if (window.WaxSettings) {
+    applyShell(WaxSettings.get());
+    WaxSettings.onChange(v => { applyShell(v); frames.forEach((_, i) => sendSettings(i)); });
+  }
 
   // (Re)load a scene from scratch; resolves when the study has registered.
   function load(i) {
