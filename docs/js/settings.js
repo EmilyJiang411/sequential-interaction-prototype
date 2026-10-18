@@ -10,20 +10,20 @@
  */
 (() => {
   const DEFAULTS = {
-    // Colors: most start at the grey the studies draw that part in; the
-    // envelope lines and the corner cue have their own chosen defaults.
-    waxColor: '#727272',
-    envelopeColor: '#c2c2c2',
-    envelopeLineColor: '#a58d73',   // warm brown lines (the studies drew them #555555)
+    // Colors. Each part is drawn in greys and recolored to these (see
+    // scenes/scene-bridge.js), keeping its highlights, shadows and detail.
+    waxColor: '#8b2933',            // deep red wax
+    envelopeColor: '#45546e',       // slate blue envelope
+    envelopeLineColor: '#a58d73',   // warm brown outline and fold lines
     cornerCueColor: '#c49a62',      // the draggable corner fold on the open flap
-    stampHandleColor: '#8a8a8a',
-    stampMetalColor: '#959595',
-    spoonHandleColor: '#8a8a8a',
-    spoonBowlColor: '#9a9a9a',
-    backgroundColor: '#e9e9e9',
+    stampHandleColor: '#704536',    // dark wood stamp handle
+    stampMetalColor: '#a6a6a6',     // light steel stamp base and shaft
+    spoonHandleColor: '#704536',    // dark wood spoon handle
+    spoonBowlColor: '#a6a6a6',      // light steel spoon bowl
+    backgroundColor: '#e8ddcb',     // warm paper background
     pressDepth: 12,            // scene units the stamp sinks into the wax (Press the Stamp)
-    liftResistance: 50,        // % — 50% lets the stuck stamp creep up to 9 units (Lift the Stamp)
-    releaseThreshold: 92,      // scene units of upward drag to break the wax's grip (Lift the Stamp)
+    liftResistance: 70,        // % — 70% lets the stuck stamp creep up to 5.4 units (Lift the Stamp)
+    releaseThreshold: 130,     // scene units of upward drag to break the wax's grip (Lift the Stamp)
     easing: 'ease-in-out'      // easing of the glide between steps
   };
 
