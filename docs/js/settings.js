@@ -10,10 +10,12 @@
  */
 (() => {
   const DEFAULTS = {
-    // Colors: each starts at the grey the studies draw that part in, so the
-    // prototype looks exactly as designed until a color is changed.
+    // Colors: most start at the grey the studies draw that part in; the
+    // envelope lines and the corner cue have their own chosen defaults.
     waxColor: '#727272',
     envelopeColor: '#c2c2c2',
+    envelopeLineColor: '#a58d73',   // warm brown lines (the studies drew them #555555)
+    cornerCueColor: '#c49a62',      // the draggable corner fold on the open flap
     stampHandleColor: '#8a8a8a',
     stampMetalColor: '#959595',
     spoonHandleColor: '#8a8a8a',
@@ -28,7 +30,9 @@
   // Each control: what it is called, where it acts, its range and unit.
   const CONTROLS = {
     waxColor:         { label: 'Wax', color: true, component: 'spoon wax, pouring stream and pool (Pour), wax disc (Align), wax pool (Press), finished seal (Lift)' },
-    envelopeColor:    { label: 'Envelope', color: true, component: 'envelope (Fold, Pour, Lift) and the surface under the wax (Press)' },
+    envelopeColor:    { label: 'Envelope', color: true, component: 'envelope fill (Fold, Pour, Lift) and the surface under the wax (Press)' },
+    envelopeLineColor: { label: 'Envelope outline and fold lines', color: true, component: 'envelope outline, flap edge and fold lines (Fold, Pour, Lift)' },
+    cornerCueColor:   { label: 'Draggable corner cue', color: true, component: 'the small folded corner you drag on the open flap (Fold)' },
     stampHandleColor: { label: 'Stamp handle', color: true, component: 'stamp handle and knob (Align, Press, Lift)' },
     stampMetalColor:  { label: 'Stamp metal base and shaft', color: true, component: 'stamp ring (Align), base, shaft and collar (Press), base and stem (Lift)' },
     spoonHandleColor: { label: 'Spoon handle', color: true, component: 'knurled spoon handle (Pour)' },

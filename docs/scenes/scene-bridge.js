@@ -16,12 +16,14 @@
  *                  { type: 'input', kind }       'key' or 'pointer'
  *
  * Colors: a scene can pass to register()
- *   colors:    [[part, selector, sceneTone], ...]   recolor every fill, stroke and
- *              gradient stop under `selector` with that part's panel color
- *              (later entries win where selectors overlap)
+ *   colors:    [[part, selector, sceneTone, attrs?], ...]   recolor every fill, stroke
+ *              and gradient stop under `selector` (or only the listed attrs, e.g.
+ *              ['stroke']) with that part's panel color; later entries win
+ *              where entries overlap
  *   cssColors: [[part, '--css-var', original, sceneTone], ...]   colors used by CSS rules
  *   background: '--css-var'                         the page background variable
- * and calls SceneBridge.paint(part, color, sceneTone) for colors it sets while running.
+ * and calls SceneBridge.paint(part, color, sceneTone) for colors it sets while running,
+ * or SceneBridge.shade(part, delta) for a part's color made lighter (+) or darker (−).
  * `settings(values)` receives the panel's other values.
  *
  * Opened on its own (not inside the sequence), a scene activates itself, so
@@ -43,7 +45,9 @@
   // At a part's ART color everything is left exactly as drawn.
   const ART = {
     wax: '#727272', envelope: '#c2c2c2', stampHandle: '#8a8a8a', stampMetal: '#959595',
-    spoonHandle: '#8a8a8a', spoonBowl: '#9a9a9a', background: '#e9e9e9'
+    spoonHandle: '#8a8a8a', spoonBowl: '#9a9a9a', background: '#e9e9e9',
+    envelopeLine: '#555555',   // the envelope art's outline grey
+    cornerCue: null            // drawn in shades of the chosen color itself (see shade())
   };
   const KEY = part => part + 'Color';
   const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -80,7 +84,7 @@
   // orig: a drawn grey; part: which panel color; tone: the scene's main tone of this part
   function tint(orig, part, tone) {
     const color = colors[part];
-    if (!color || !ART[part] || color.toLowerCase() === ART[part]) return orig;
+    if (!color || !ART[part] || color.toLowerCase() === ART[part]) return orig;   // (ART null: shade() only)
     const [h, s, lc] = hsl(parse(color));
     const lg = safe(lum(ART[part])), ls = safe(lum(tone || ART[part])), lt = safe(lc);
     const greyTarget = Math.pow(ls, Math.log(lt) / Math.log(lg));   // where a grey pick puts the scene tone
@@ -93,9 +97,10 @@
   function collect() {
     originals = [];
     const seen = new Map();   // "el attr" -> record, so later entries win
-    (api.colors || []).forEach(([part, selector, tone]) => {
+    (api.colors || []).forEach(([part, selector, tone, only]) => {
+      const attrs = only || ATTRS;
       document.querySelectorAll(selector).forEach(root => {
-        [root, ...root.querySelectorAll('*')].forEach(el => ATTRS.forEach(attr => {
+        [root, ...root.querySelectorAll('*')].forEach(el => attrs.forEach(attr => {
           const value = el.getAttribute(attr);
           if (!value || !HEX.test(value)) return;
           const rec = seen.get(el) && seen.get(el)[attr];
@@ -134,7 +139,14 @@
     },
     complete() { post({ type: 'complete' }); },
     // a color the scene sets while running, recolored like the drawn ones
-    paint(part, color, tone) { return tint(color, part, tone); }
+    paint(part, color, tone) { return tint(color, part, tone); },
+    // the part's chosen color, lightened (+) or darkened (−) in lightness; null until a color is known
+    shade(part, delta) {
+      const color = colors[part];
+      if (!color) return null;
+      const [h, s, l] = hsl(parse(color));
+      return toHex([h, s, Math.min(1, Math.max(0, l + delta))]);
+    }
   };
 
   window.addEventListener('message', e => {

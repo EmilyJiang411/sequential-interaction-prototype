@@ -67,6 +67,10 @@
   body.is-dragging, body.is-dragging .hit { cursor: grabbing; }
 
   .crease { opacity: .55; transition: opacity 200ms ease-out; }
+  /* Grab cue pulse: only while the flap rests open and untouched */
+  .cue-idle #cuePulse { animation: cuePulse 2.4s ease-in-out infinite; }
+  @keyframes cuePulse { 0%, 100% { opacity: 0; } 50% { opacity: .32; } }
+  @media (prefers-reduced-motion: reduce) { .cue-idle #cuePulse { animation: none; } }
   .is-hot .crease { opacity: 1; }
 
   .reset {
@@ -136,6 +140,8 @@
             <path d="M172.8 125 L2 2 H398 L237.6 125" fill="none" stroke="#555555" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
             <!-- Folded corner (dog-ear) -->
             <path id="cornerFill" fill="url(#underGrad)"/>
+            <!-- Grab cue: a soft brightening of the folded corner while the flap waits to be grabbed -->
+            <path id="cuePulse" fill="#fff" opacity="0" pointer-events="none"/>
             <path id="cornerEdge" fill="none" stroke="#555555" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
             <line id="foldLine" x1="172.8" y1="125" x2="237.6" y2="125" stroke="#555555" stroke-width="2" stroke-linecap="round"/>
             <!-- Grab target around the corner -->
@@ -158,7 +164,7 @@
   const frame = $('frame'), stage = $('stage'), unit = $('unit');
   const flap = $('flap'), cast = $('cast'), hit = $('hit'), reset = $('reset');
   const cornerFill = $('cornerFill'), cornerEdge = $('cornerEdge');
-  const cornerShadow = $('cornerShadow'), foldLine = $('foldLine');
+  const cornerShadow = $('cornerShadow'), foldLine = $('foldLine'), cuePulse = $('cuePulse');
   const ug0 = $('ug0'), ug1 = $('ug1');
   const root = document.body;
 
@@ -208,13 +214,16 @@
     const fy0 = c > 0 ? FY - 0.8 : FY;
     const d = `M${AX} ${fy0} L${TX} ${py.toFixed(2)} L${BX} ${fy0} Z`;
     cornerFill.setAttribute('d', d);
+    cuePulse.setAttribute('d', d);
     cornerEdge.setAttribute('d', `M${AX} ${FY} L${TX} ${py.toFixed(2)} L${BX} ${FY}`);
 
     if (c < 0) {
-      // underside showing: light paper, a touch darker when standing up
+      // underside showing: light paper, a touch darker when standing up.
+      // In the sequence it is the grab cue, drawn in the control panel's corner cue color
+      // with the same shading: darker at the fold, lighter at the tip, darker standing up.
       const top = Math.round(250 - 26 * s), base = Math.round(238 - 22 * s);
-      ug0.setAttribute('stop-color', SceneBridge.paint('envelope', `rgb(${base},${base},${base})`, ENV_TONE));
-      ug1.setAttribute('stop-color', SceneBridge.paint('envelope', `rgb(${top},${top},${top})`, ENV_TONE));
+      ug0.setAttribute('stop-color', SceneBridge.shade('cornerCue', -0.06 - 0.09 * s) || SceneBridge.paint('envelope', `rgb(${base},${base},${base})`, ENV_TONE));
+      ug1.setAttribute('stop-color', SceneBridge.shade('cornerCue', 0.05 - 0.10 * s) || SceneBridge.paint('envelope', `rgb(${top},${top},${top})`, ENV_TONE));
       cornerFill.setAttribute('fill', 'url(#underGrad)');
     } else {
       const g = Math.round(228 - 34 * s);
@@ -257,6 +266,7 @@
     cast.style.filter = `blur(${(0.9 + s * 9).toFixed(2)}px)`;
 
     renderCorner();
+    root.classList.toggle('cue-idle', state === 'open' && !hot);
     requestAnimationFrame(render);
   }
 
@@ -414,7 +424,10 @@
   SceneBridge.register({
     reset: () => reset.click(),
     focusTarget: () => hit,
-    colors: [['envelope', '.env > svg, .flap svg', ENV_TONE]],
+    colors: [
+      ['envelope', '.env > svg, .flap svg', ENV_TONE],
+      ['envelopeLine', '.env > svg, .flap svg', '#555555', ['stroke']]   // outline and fold lines
+    ],
     background: '--bg',
     // tip of the closed flap, where the wax will land
     // w: the envelope's on-screen width, so the hand-off can keep the envelope the same size

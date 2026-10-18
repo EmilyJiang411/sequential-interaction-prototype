@@ -22,7 +22,9 @@ A collapsible panel on the left (the round sliders button, top-left) tunes the s
 | Control | Acts on | Range | Saved default |
 |---|---|---|---|
 | Wax | spoon wax, pouring stream and pool (Pour), wax disc (Align), wax pool (Press), finished seal (Lift) | any color | `#727272` |
-| Envelope | envelope (Fold, Pour, Lift) and the surface under the wax (Press) | any color | `#c2c2c2` |
+| Envelope | envelope fill (Fold, Pour, Lift) and the surface under the wax (Press) | any color | `#c2c2c2` |
+| Envelope outline and fold lines | outline, flap edge and fold lines (Fold, Pour, Lift) | any color | `#a58d73` |
+| Draggable corner cue | the small folded corner you drag on the open flap (Fold); it gently pulses while waiting to be grabbed | any color | `#c49a62` |
 | Stamp handle | handle and knob (Align, Press, Lift) | any color | `#8a8a8a` |
 | Stamp metal base and shaft | ring (Align), base, shaft and collar (Press), base and stem (Lift) | any color | `#959595` |
 | Spoon handle | knurled handle (Pour) | any color | `#8a8a8a` |
@@ -33,7 +35,7 @@ A collapsible panel on the left (the round sliders button, top-left) tunes the s
 | Release threshold | Lift the Stamp: upward drag needed to separate the stamp from the wax | 30–180 u | 92 u |
 | Transition easing | the glide between steps and the restart glide (Linear, Ease In, Ease Out, Ease In-Out, Spring/Bounce) | — | Ease In-Out |
 
-Each color default is the grey the studies draw that part in, so nothing changes until a color is adjusted. Recoloring keeps every highlight, shadow, gradient, texture and seal detail: each shade keeps its place from light to dark and takes the new hue. For a saturated color, each scene's main tone of that part lands on the chosen color, so the wax in the spoon, the pouring stream and the finished seal match even though the studies drew them in different greys.
+Most color defaults are the grey the studies draw that part in; the envelope lines and the corner cue have their own defaults. Recoloring keeps every highlight, shadow, gradient, texture and seal detail: each shade keeps its place from light to dark and takes the new hue. For a saturated color, each scene's main tone of that part lands on the chosen color, so the wax in the spoon, the pouring stream and the finished seal match even though the studies drew them in different greys.
 
 *u* is a scene unit: the Press stamp's base is 120 u wide, the Lift stamp's handle about 165 u tall. Dragging always follows the pointer directly; easing applies only to animated transitions.
 
